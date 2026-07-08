@@ -8,7 +8,7 @@ pipeline {
     CONTAINER_PORT = '5778'
     BUILD_IMAGE = 'node:22-alpine'
     RUNTIME_IMAGE = 'nginx:1.27-alpine'
-    DOCKER_CONTEXT = '.jenkins-docker-context'
+    IMAGE_CONTEXT_DIR = '.jenkins-docker-context'
     DEPLOY_IMAGE = "scra-atlas:${BUILD_NUMBER}"
   }
 
@@ -44,10 +44,10 @@ pipeline {
       steps {
         sh '''
           set -eu
-          rm -rf "$DOCKER_CONTEXT"
-          mkdir -p "$DOCKER_CONTEXT"
+          rm -rf "$IMAGE_CONTEXT_DIR"
+          mkdir -p "$IMAGE_CONTEXT_DIR"
 
-          cat > "$DOCKER_CONTEXT/nginx.conf" <<EOF
+          cat > "$IMAGE_CONTEXT_DIR/nginx.conf" <<EOF
 server {
   listen ${CONTAINER_PORT};
   server_name _;
@@ -60,16 +60,16 @@ server {
 }
 EOF
 
-          cp -R dist "$DOCKER_CONTEXT/dist"
+          cp -R dist "$IMAGE_CONTEXT_DIR/dist"
 
-          cat > "$DOCKER_CONTEXT/Dockerfile" <<EOF
+          cat > "$IMAGE_CONTEXT_DIR/Dockerfile" <<EOF
 FROM ${RUNTIME_IMAGE}
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY dist/ /usr/share/nginx/html/
 EXPOSE ${CONTAINER_PORT}
 EOF
 
-          docker build -t "$DEPLOY_IMAGE" "$DOCKER_CONTEXT"
+          docker build -t "$DEPLOY_IMAGE" "$IMAGE_CONTEXT_DIR"
         '''
       }
     }
@@ -95,7 +95,7 @@ EOF
     }
     cleanup {
       sh '''
-        rm -rf "$DOCKER_CONTEXT"
+        rm -rf "$IMAGE_CONTEXT_DIR"
       '''
     }
   }
