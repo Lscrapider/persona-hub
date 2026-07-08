@@ -6,7 +6,6 @@ pipeline {
     CONTAINER_NAME = 'scra-atlas'
     HOST_PORT = '5778'
     CONTAINER_PORT = '5778'
-    BUILD_IMAGE = 'node:22-alpine'
     RUNTIME_IMAGE = 'nginx:1.27-alpine'
     IMAGE_CONTEXT_DIR = '.jenkins-docker-context'
     DEPLOY_IMAGE = "scra-atlas:${BUILD_NUMBER}"
@@ -29,13 +28,8 @@ pipeline {
       steps {
         sh '''
           set -eu
-          docker run --rm \
-            -e HOST_UID="$(id -u)" \
-            -e HOST_GID="$(id -g)" \
-            -v "$PWD:/workspace" \
-            -w /workspace \
-            "$BUILD_IMAGE" \
-            sh -lc 'corepack enable && pnpm install --frozen-lockfile && pnpm build && chown -R "$HOST_UID:$HOST_GID" node_modules dist'
+          pnpm install --frozen-lockfile
+          pnpm build
         '''
       }
     }
@@ -47,18 +41,18 @@ pipeline {
           rm -rf "$IMAGE_CONTEXT_DIR"
           mkdir -p "$IMAGE_CONTEXT_DIR"
 
-          cat > "$IMAGE_CONTEXT_DIR/nginx.conf" <<EOF
-server {
-  listen ${CONTAINER_PORT};
-  server_name _;
-  root /usr/share/nginx/html;
-  index index.html;
-
-  location / {
-    try_files \$uri \$uri/ /index.html;
-  }
-}
-EOF
+          {
+            printf '%s\n' 'server {'
+            printf '%s\n' "  listen ${CONTAINER_PORT};"
+            printf '%s\n' '  server_name _;'
+            printf '%s\n' '  root /usr/share/nginx/html;'
+            printf '%s\n' '  index index.html;'
+            printf '%s\n' ''
+            printf '%s\n' '  location / {'
+            printf '%s\n' '    try_files $uri $uri/ /index.html;'
+            printf '%s\n' '  }'
+            printf '%s\n' '}'
+          } > "$IMAGE_CONTEXT_DIR/nginx.conf"
 
           cp -R dist "$IMAGE_CONTEXT_DIR/dist"
 
