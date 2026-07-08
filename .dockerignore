@@ -1,0 +1,10 @@
+.git
+.idea
+node_modules
+dist
+.jenkins-docker-context
+.DS_Store
+.env
+.env.local
+*.log
+*.tsbuildinfo
