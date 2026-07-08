@@ -17,8 +17,8 @@ export const fallbackAtlasConfig: AtlasConfig = {
   projects: [
     {
       codename: 'MINT-01',
-      title: '理财投资AI知识库',
-      summary: '一个整理理财投资相关内容的 AI 知识库入口。',
+      title: 'Finance Management AI',
+      summary: '一个个人理财投资相关内容的 AI 知识库入口（不对外）。',
       url: 'http://152.136.174.90/finance/',
       signalType: 'Knowledge Signal',
       signalDescription: 'A compact finance-learning entry point indexed as a stable signal source.',
@@ -31,11 +31,11 @@ export const fallbackAtlasConfig: AtlasConfig = {
     },
     {
       codename: 'DARK NODE',
-      title: '开发中项目',
-      summary: '还在构建中，暂时只保留一个轨道位置。',
-      url: null,
-      signalType: 'Dormant Coordinate',
-      signalDescription: 'A reserved atlas position for a project still being assembled.',
+      title: 'Urban Sidequest',
+      summary: '基于城市副本的旅游APP。',
+      url: 'https://github.com/Lscrapider/urban-sidequest',
+      signalType: 'Journey Signal',
+      signalDescription: 'A tourist route guide for an urban.',
       signalAsset: '/assets/generated/dark-node-loop.webp',
       signalStillAsset: '/assets/generated/dark-node-still.png',
       registryLabel: 'In-progress project slot',
@@ -46,7 +46,7 @@ export const fallbackAtlasConfig: AtlasConfig = {
     {
       codename: 'FUTURE SIGNAL',
       title: '期待未来坐标',
-      summary: '保留给下一个具体项目的位置。现在先作为一片未命名星云，等待新的信号进入星图。',
+      summary: '等待新的信号进入星图中。',
       url: null,
       signalType: 'Reserved Nebula',
       signalDescription: 'A future coordinate held open inside the atlas.',
