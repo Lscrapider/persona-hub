@@ -1,5 +1,5 @@
-import type { CSSProperties } from 'react';
-import { ExternalLink, GitFork, RadioTower } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, type CSSProperties } from 'react';
+import { ChevronsDown, ExternalLink, GitFork, RadioTower, RotateCcw } from 'lucide-react';
 import type { AtlasConfig, AtlasProject, AtlasProjectStatus } from '../../config/atlas.schema';
 import { useAtlasStore } from '../../store/atlasStore';
 import { CosmicShaderBackground } from './CosmicShaderBackground';
@@ -125,11 +125,34 @@ function projectScenes(projects: AtlasProject[]) {
   }));
 }
 
+const AUTO_TRAVERSE_PX_PER_SECOND = 760;
+const AUTO_TRAVERSE_MIN_DURATION = 1800;
+const AUTO_TRAVERSE_MAX_DURATION = 8400;
+const AUTO_TRAVERSE_TARGET_EPSILON = 0.018;
+const AUTO_TRAVERSE_CANCEL_EVENTS: Array<keyof WindowEventMap> = ['wheel', 'touchstart', 'pointerdown', 'keydown'];
+
 export function SignalAtlasExperience({ config, warning }: SignalAtlasExperienceProps) {
+  const autoTraverseFrameRef = useRef<number | null>(null);
+  const autoTraverseCleanupRef = useRef<(() => void) | null>(null);
   const scrollProgress = useAtlasStore((state) => state.scrollProgress);
   const reducedMotion = useAtlasStore((state) => state.reducedMotion);
-  const scenes = projectScenes(config.projects);
+  const scenes = useMemo(() => projectScenes(config.projects), [config.projects]);
   const heroOpacity = 1 - range(scrollProgress, 0.1, 0.18);
+  const boundaryOpacity = smoothRange(scrollProgress, 0.93, 0.985);
+  const boundaryInteractive = boundaryOpacity > 0.45;
+  const traverseTargets = useMemo(
+    () => [
+      ...scenes.map((scene) => ({
+        progress: (scene.start + scene.end) / 2,
+        label: scene.entry.codename
+      })),
+      { progress: 0.985, label: 'ATLAS BOUNDARY' }
+    ],
+    [scenes]
+  );
+  const nextTraverseTarget =
+    traverseTargets.find((target) => target.progress > scrollProgress + AUTO_TRAVERSE_TARGET_EPSILON) ?? null;
+  const traverseOpacity = nextTraverseTarget ? 1 - boundaryOpacity : 0;
   const sceneStates = scenes.map((scene) => ({
     scene,
     opacity: sceneOpacity(scrollProgress, scene.start, scene.end),
@@ -157,10 +180,90 @@ export function SignalAtlasExperience({ config, warning }: SignalAtlasExperience
     .toString()
     .padStart(4, '0');
 
+  const cancelAutoTraverse = useCallback(() => {
+    if (autoTraverseFrameRef.current !== null) {
+      window.cancelAnimationFrame(autoTraverseFrameRef.current);
+      autoTraverseFrameRef.current = null;
+    }
+
+    autoTraverseCleanupRef.current?.();
+    autoTraverseCleanupRef.current = null;
+  }, []);
+
+  const scrollToOrigin = useCallback(() => {
+    cancelAutoTraverse();
+    window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
+  }, [cancelAutoTraverse, reducedMotion]);
+
+  const startAutoTraverse = useCallback(() => {
+    cancelAutoTraverse();
+
+    const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    const startY = window.scrollY;
+    const currentProgress = maxScroll > 0 ? startY / maxScroll : 0;
+    const target = traverseTargets.find((item) => item.progress > currentProgress + AUTO_TRAVERSE_TARGET_EPSILON);
+
+    if (!target) return;
+
+    const targetY = Math.min(maxScroll, Math.max(0, target.progress * maxScroll));
+    const distance = Math.max(0, targetY - startY);
+
+    if (distance <= 2) return;
+
+    if (reducedMotion) {
+      window.scrollTo({ top: targetY, behavior: 'auto' });
+      return;
+    }
+
+    const duration = Math.min(
+      AUTO_TRAVERSE_MAX_DURATION,
+      Math.max(AUTO_TRAVERSE_MIN_DURATION, (distance / AUTO_TRAVERSE_PX_PER_SECOND) * 1000)
+    );
+    const startedAt = window.performance.now();
+    const listenerOptions: AddEventListenerOptions = { passive: true };
+    const finishAutoTraverse = () => {
+      if (autoTraverseFrameRef.current !== null) {
+        window.cancelAnimationFrame(autoTraverseFrameRef.current);
+        autoTraverseFrameRef.current = null;
+      }
+
+      autoTraverseCleanupRef.current?.();
+      autoTraverseCleanupRef.current = null;
+    };
+    const abortAutoTraverse = () => finishAutoTraverse();
+
+    AUTO_TRAVERSE_CANCEL_EVENTS.forEach((eventName) => {
+      window.addEventListener(eventName, abortAutoTraverse, listenerOptions);
+    });
+    autoTraverseCleanupRef.current = () => {
+      AUTO_TRAVERSE_CANCEL_EVENTS.forEach((eventName) => {
+        window.removeEventListener(eventName, abortAutoTraverse, listenerOptions);
+      });
+    };
+
+    const step = (timestamp: number) => {
+      const progress = Math.min(1, (timestamp - startedAt) / duration);
+      window.scrollTo(0, startY + distance * progress);
+
+      if (progress < 1) {
+        autoTraverseFrameRef.current = window.requestAnimationFrame(step);
+        return;
+      }
+
+      finishAutoTraverse();
+    };
+
+    autoTraverseFrameRef.current = window.requestAnimationFrame(step);
+  }, [cancelAutoTraverse, reducedMotion, traverseTargets]);
+
+  useEffect(() => cancelAutoTraverse, [cancelAutoTraverse]);
+
   const narrativeStyle = {
     '--deep-opacity': heroOpacity,
     '--tunnel-intensity': visualTunnelIntensity,
     '--project-presence': projectPresence,
+    '--boundary-opacity': boundaryOpacity,
+    '--traverse-opacity': traverseOpacity,
     '--field-scale': 1 + scrollProgress * 0.08 + tunnelScaleIntensity * 0.58,
     '--field-dim': 0.68 + projectPresence * 0.12,
     '--scan-opacity': tunnelIntensity,
@@ -216,6 +319,21 @@ export function SignalAtlasExperience({ config, warning }: SignalAtlasExperience
         <p>{config.identity.description}</p>
       </section>
 
+      <div className="atlas-traverse-panel" style={{ pointerEvents: nextTraverseTarget ? 'auto' : 'none' } as CSSProperties}>
+        <button
+          className="atlas-traverse"
+          type="button"
+          onClick={startAutoTraverse}
+          disabled={!nextTraverseTarget}
+        >
+          <ChevronsDown size={16} />
+          <span>Auto Traverse</span>
+        </button>
+        <span className="atlas-traverse-panel__meta">
+          {nextTraverseTarget ? `Next: ${nextTraverseTarget.label}` : 'Boundary reached'}
+        </span>
+      </div>
+
       <div className="tunnel-readout" style={{ opacity: readoutIntensity }} aria-hidden="true">
         <span>Long-range transit</span>
         <strong>{activeScene?.entry.codename ?? 'DEEP FIELD'}</strong>
@@ -229,6 +347,33 @@ export function SignalAtlasExperience({ config, warning }: SignalAtlasExperience
           interactive={opacity > 0.5}
         />
       ))}
+
+      <section
+        className="atlas-boundary"
+        style={{ pointerEvents: boundaryInteractive ? 'auto' : 'none' } as CSSProperties}
+        aria-label="Atlas boundary"
+        aria-hidden={!boundaryInteractive}
+      >
+        <span className="system-label">Atlas Boundary</span>
+        <h2>ATLAS BOUNDARY</h2>
+        <p>Current coordinates exhausted. New signals can be indexed from here.</p>
+        <div className="atlas-boundary__actions">
+          <button className="atlas-boundary__action" type="button" onClick={scrollToOrigin} tabIndex={boundaryInteractive ? 0 : -1}>
+            <RotateCcw size={15} />
+            <span>Return to origin</span>
+          </button>
+          <a
+            className="atlas-boundary__action atlas-boundary__action--secondary"
+            href={config.identity.github}
+            target="_blank"
+            rel="noreferrer"
+            tabIndex={boundaryInteractive ? 0 : -1}
+          >
+            <GitFork size={15} />
+            <span>GitHub</span>
+          </a>
+        </div>
+      </section>
 
       {warning ? <p className="config-warning">Fallback config active: {warning}</p> : null}
     </section>

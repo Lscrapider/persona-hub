@@ -506,6 +506,54 @@ a:focus-visible {
   text-wrap: pretty;
 }
 
+.atlas-traverse-panel {
+  position: fixed;
+  z-index: 8;
+  left: clamp(1.2rem, 6vw, 5rem);
+  bottom: clamp(1rem, 3.2vh, 1.8rem);
+  pointer-events: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.72rem 0.9rem;
+  opacity: var(--traverse-opacity);
+  transform: translate3d(0, calc((1 - var(--traverse-opacity)) * 0.65rem), 0);
+}
+
+.atlas-traverse,
+.atlas-boundary__action {
+  border: 1px solid oklch(0.72 0.06 205 / 0.32);
+  background: oklch(0.045 0.02 252 / 0.56);
+  color: var(--green);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.35rem;
+  padding: 0.48rem 0.68rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.atlas-traverse:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
+.atlas-traverse:not(:disabled):hover,
+.atlas-boundary__action:hover {
+  border-color: oklch(0.82 0.105 206 / 0.52);
+  background: oklch(0.07 0.03 230 / 0.68);
+  color: var(--ink);
+}
+
+.atlas-traverse-panel__meta {
+  color: oklch(0.78 0.024 228 / 0.52);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
 .atlas-project-page {
   position: fixed;
   z-index: 6;
@@ -853,6 +901,62 @@ a:focus-visible {
 
 .signal-status {
   color: var(--amber);
+}
+
+.atlas-boundary {
+  position: fixed;
+  z-index: 7;
+  left: clamp(1.2rem, 6vw, 5rem);
+  bottom: clamp(3rem, 10vh, 6.2rem);
+  width: min(44rem, calc(100vw - 2.4rem));
+  display: grid;
+  gap: clamp(0.85rem, 1.8vw, 1.15rem);
+  opacity: var(--boundary-opacity);
+  transform: translate3d(0, calc((1 - var(--boundary-opacity)) * 1.5rem), 0);
+}
+
+.atlas-boundary::before {
+  content: "";
+  position: absolute;
+  inset: -1.5rem -2rem -1.4rem -1rem;
+  z-index: -1;
+  background:
+    linear-gradient(90deg, oklch(0.03 0.018 252 / 0.72), oklch(0.03 0.018 252 / 0.42), transparent),
+    radial-gradient(circle at 10% 85%, oklch(0.8 0.12 165 / 0.12), transparent 16rem);
+  pointer-events: none;
+}
+
+.atlas-boundary h2 {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 7vw, 5.2rem);
+  font-weight: 580;
+  line-height: 0.94;
+  text-wrap: balance;
+}
+
+.atlas-boundary p {
+  max-width: 48ch;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: clamp(1rem, 1.5vw, 1.18rem);
+  line-height: 1.62;
+}
+
+.atlas-boundary__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.atlas-boundary__action {
+  width: max-content;
+  text-decoration: none;
+}
+
+.atlas-boundary__action--secondary {
+  color: var(--ink-soft);
 }
 
 .icon-button {
