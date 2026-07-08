@@ -108,13 +108,14 @@ void main() {
   float launch = smoothstep(0.0, 0.3, tunnelPhase);
   float cruise = smoothstep(0.18, 0.38, tunnelPhase) * (1.0 - smoothstep(0.72, 0.94, tunnelPhase));
   float arrival = smoothstep(0.64, 1.0, tunnelPhase);
+  float transitArrival = arrival * smoothstep(0.03, 0.18, tunnel);
 
   float lens = smoothstep(0.58, 0.0, length(p - pointer * 1.6));
   p += (pointer - p) * lens * 0.007;
 
   vec2 tunnelTarget = vec2(u_side * 0.4, -0.03);
-  vec2 zoomOrigin = mix(vec2(0.0), tunnelTarget, arrival);
-  float zoomScale = mix(1.0, 0.14, tunnel * launch * (1.0 - arrival * 0.42));
+  vec2 zoomOrigin = mix(vec2(0.0), tunnelTarget, transitArrival);
+  float zoomScale = mix(1.0, 0.14, tunnel * launch * (1.0 - transitArrival * 0.42));
   vec2 zoomedP = zoomOrigin + (p - zoomOrigin) * zoomScale;
 
   vec2 slowWarp = flowWarp(zoomedP * 1.06, t);
@@ -141,7 +142,9 @@ void main() {
   float focusFuture = 1.0 - step(0.5, abs(u_focus - 3.0));
   vec3 projectColor = mint * focusOne + solar * focusTwo + violet * focusFuture;
   projectColor = mix(signalCyan, projectColor, clamp(focusOne + focusTwo + focusFuture, 0.0, 1.0));
-  float futureDimming = 1.0 - focusFuture * 0.68;
+  float futureDimming = 1.0 - focusFuture * 0.34;
+  float projectSizeBalance = 1.0 - focusOne * 0.28 + focusFuture * 0.08;
+  float projectLightBalance = 1.0 - focusOne * 0.12 + focusFuture * 0.34;
 
   vec3 color = mix(abyss, deepBlue, verticalDepth);
   color += inkBlue * radialDepth * 0.22;
@@ -176,8 +179,8 @@ void main() {
   color *= 1.0 - darkFilament * localClouds * 0.28;
 
   vec2 projectCenter = vec2(u_side * 0.42, -0.03);
-  float arrivalScale = mix(0.16, 0.74, max(arrival, project));
-  float projectScale = arrivalScale * (1.0 - focusFuture * 0.24);
+  float arrivalScale = mix(0.16, 0.74, max(transitArrival, project));
+  float projectScale = arrivalScale * projectSizeBalance;
   vec2 projectLocal = (field - projectCenter) / projectScale;
   vec2 projectSpace = rotate2d(u_side * (0.32 + focusTwo * 0.32 - focusFuture * 0.18)) * projectLocal;
   vec2 projectWarp = flowWarp(projectSpace * 1.72 + vec2(u_focus * 4.7, -u_focus * 2.9), t * 0.8);
@@ -199,9 +202,9 @@ void main() {
   projectNebula *= 1.0 - projectVoid * 0.32;
   projectNebula += envelope * fracturedCloud * 0.12 + projectShell * projectGrain * 0.05;
 
-  color += projectColor * projectNebula * project * PROJECT_NEBULA_GAIN * futureDimming;
-  color += mix(projectColor, vec3(0.9, 0.86, 0.74), 0.25) * projectCore * projectShell * project * 0.08 * futureDimming;
-  color *= 1.0 + projectNebula * project * 0.12 * futureDimming;
+  color += projectColor * projectNebula * project * PROJECT_NEBULA_GAIN * futureDimming * projectLightBalance;
+  color += mix(projectColor, vec3(0.9, 0.86, 0.74), 0.25) * projectCore * projectShell * project * 0.08 * futureDimming * projectLightBalance;
+  color *= 1.0 + projectNebula * project * 0.12 * futureDimming * projectLightBalance;
 
   float clusterMask = smoothstep(0.32, 0.72, fbm4(p * 1.45 + vec2(12.7, -4.8)));
   clusterMask += nebula * 0.28;
@@ -214,15 +217,15 @@ void main() {
   float dustSpark = step(0.9972, hash(floor(gl_FragCoord.xy * 0.72)));
   color += starTint * (starsFaint * 0.11 + starsSmall * 0.54 + starsMedium * 0.76 + dustSpark * 0.05) * twinkle;
 
-  vec2 travelOrigin = mix(vec2(0.0), projectCenter, arrival);
+  vec2 travelOrigin = mix(vec2(0.0), projectCenter, transitArrival);
   vec2 travelP = p - travelOrigin;
   float travelRadius = max(length(travelP), 0.012);
   float centerPull = smoothstep(0.32, 0.0, travelRadius);
-  float exitBloom = arrival * smoothstep(0.62, 0.0, length(p - projectCenter));
+  float exitBloom = transitArrival * smoothstep(0.62, 0.0, length(p - projectCenter));
   float entryDark = smoothstep(0.0, 0.5, tunnelPhase) * (1.0 - smoothstep(1.0, 1.55, travelRadius));
 
   color = mix(color, abyss + deepBlue * 0.25, tunnel * (0.32 + cruise * 0.18));
-  color += mix(signalCyan, projectColor, arrival) * centerPull * tunnel * 0.12;
+  color += mix(signalCyan, projectColor, transitArrival) * centerPull * tunnel * 0.12;
   color += projectColor * exitBloom * tunnel * 0.22;
   color *= 1.0 - entryDark * tunnel * 0.18;
 

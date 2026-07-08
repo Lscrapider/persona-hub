@@ -442,7 +442,6 @@ a:focus-visible {
   text-align: center;
   text-transform: none;
   transform: translate(-50%, -50%) scale(calc(0.92 + var(--tunnel-intensity) * 0.12));
-  transition: opacity 80ms linear;
 }
 
 .tunnel-readout span {
@@ -517,11 +516,8 @@ a:focus-visible {
   align-items: center;
   opacity: var(--scene-opacity);
   transform:
-    translate3d(0, calc((1 - var(--scene-opacity)) * 2.4rem), 0)
+    translate3d(0, calc((1 - var(--scene-opacity)) * 1.7rem), 0)
     scale(calc(0.98 + var(--scene-opacity) * 0.02));
-  transition:
-    opacity 100ms linear,
-    transform 160ms ease-out;
 }
 
 .atlas-project-page--reverse {

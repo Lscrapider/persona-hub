@@ -85,9 +85,9 @@ function drawTransitField(
   const arrival = smoothstep(0.64, 1, phase);
   const centerX = width * (0.5 + scene.focusSide * 0.1 * arrival);
   const centerY = height * (0.5 - 0.025 * arrival);
-  const spread = Math.min(width, height) * (0.09 + intensity * 0.028);
-  const zAdvance = 2.9;
-  const stepBack = 0.018 + intensity * 0.062;
+  const spread = Math.min(width, height) * (0.092 + intensity * 0.036);
+  const zAdvance = 3.35;
+  const stepBack = 0.026 + intensity * 0.088;
   const sideDrift = scene.focusSide * arrival * 0.1;
 
   context.save();
@@ -115,14 +115,14 @@ function drawTransitField(
     const distanceFromCenter = Math.hypot(current.x - centerX, current.y - centerY);
     const edgeSpeed = clamp(distanceFromCenter / (Math.min(width, height) * 0.74));
     const depthFade = smoothstep(0.02, 0.2, z) * (1 - smoothstep(0.92, 1.06, z));
-    const alpha = intensity * star.brightness * depthFade * (0.12 + edgeSpeed * 0.72);
+    const alpha = intensity * star.brightness * depthFade * (0.18 + edgeSpeed * 0.86);
 
     if (alpha < 0.008) continue;
 
     const red = Math.round(178 + star.warmth * 34);
     const green = Math.round(207 + star.warmth * 18);
     const blue = Math.round(220 + star.warmth * 8);
-    const lineWidth = (0.42 + star.size * 0.5 + edgeSpeed * 0.5) * (0.76 + intensity * 0.5);
+    const lineWidth = (0.42 + star.size * 0.5 + edgeSpeed * 0.58) * (0.78 + intensity * 0.58);
 
     context.strokeStyle = `rgba(${red}, ${green}, ${blue}, ${alpha.toFixed(4)})`;
     context.lineWidth = lineWidth;
@@ -151,7 +151,7 @@ export function TransitStarfieldCanvas({
 }: TransitStarfieldCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const sceneRef = useRef<SceneState>({ focusIndex, focusSide, tunnelIntensity, tunnelPhase, reducedMotion });
-  const starsRef = useRef<TransitStar[]>(createTransitStars(560));
+  const starsRef = useRef<TransitStar[]>(createTransitStars(720));
 
   useEffect(() => {
     sceneRef.current = { focusIndex, focusSide, tunnelIntensity, tunnelPhase, reducedMotion };

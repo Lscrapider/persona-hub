@@ -36,12 +36,12 @@ type ProjectScene = {
   tunnelEnd: number;
 };
 
-const SCENE_FADE_IN = 0.045;
-const SCENE_FADE_OUT = 0.055;
+const SCENE_FADE_IN = 0.062;
+const SCENE_FADE_OUT = 0.06;
 const NARRATIVE_WINDOWS = [
-  { start: 0.22, end: 0.38, tunnelStart: 0.13, tunnelEnd: 0.22 },
-  { start: 0.46, end: 0.62, tunnelStart: 0.38, tunnelEnd: 0.46 },
-  { start: 0.7, end: 0.94, tunnelStart: 0.62, tunnelEnd: 0.7 }
+  { start: 0.22, end: 0.38, tunnelStart: 0.12, tunnelEnd: 0.25 },
+  { start: 0.46, end: 0.62, tunnelStart: 0.34, tunnelEnd: 0.5 },
+  { start: 0.7, end: 0.94, tunnelStart: 0.58, tunnelEnd: 0.74 }
 ] as const;
 
 function clamp(value: number) {
@@ -52,17 +52,20 @@ function range(progress: number, start: number, end: number) {
   return clamp((progress - start) / (end - start));
 }
 
+function smoothRange(progress: number, start: number, end: number) {
+  const value = range(progress, start, end);
+
+  return value * value * (3 - 2 * value);
+}
+
 function sceneOpacity(progress: number, start: number, end: number) {
-  return range(progress, start, start + SCENE_FADE_IN) * (1 - range(progress, end - SCENE_FADE_OUT, end));
+  return smoothRange(progress, start, start + SCENE_FADE_IN) * (1 - smoothRange(progress, end - SCENE_FADE_OUT, end));
 }
 
 function tunnelPulse(progress: number, start: number, end: number) {
-  const middle = (start + end) / 2;
-
   if (progress < start || progress > end) return 0;
-  if (progress <= middle) return range(progress, start, middle);
 
-  return 1 - range(progress, middle, end);
+  return Math.sin(range(progress, start, end) * Math.PI);
 }
 
 function tunnelProgress(progress: number, start: number, end: number) {
@@ -71,6 +74,10 @@ function tunnelProgress(progress: number, start: number, end: number) {
 
 function tunnelArrival(progress: number) {
   return range(progress, 0.64, 1);
+}
+
+function tunnelReadoutFade(progress: number) {
+  return 1 - smoothRange(progress, 0.78, 1);
 }
 
 function statusLabel(status: AtlasProjectStatus) {
@@ -129,27 +136,32 @@ export function SignalAtlasExperience({ config, warning }: SignalAtlasExperience
     tunnel: reducedMotion ? 0 : tunnelPulse(scrollProgress, scene.tunnelStart, scene.tunnelEnd),
     tunnelProgress: tunnelProgress(scrollProgress, scene.tunnelStart, scene.tunnelEnd)
   }));
+  const transitState =
+    sceneStates.find(({ scene }) => scrollProgress >= scene.tunnelStart && scrollProgress <= scene.tunnelEnd) ?? null;
   const activeScene =
     sceneStates.find(({ opacity }) => opacity > 0.08)?.scene ??
-    sceneStates.find(({ tunnel }) => tunnel > 0.08)?.scene ??
+    transitState?.scene ??
     null;
   const tunnelIntensity = Math.max(...sceneStates.map(({ tunnel }) => tunnel), 0);
-  const activeTunnelState = sceneStates.reduce((best, current) => (current.tunnel > best.tunnel ? current : best));
-  const tunnelPhase = activeTunnelState.tunnel > 0.02 ? activeTunnelState.tunnelProgress : 0;
-  const arrivalPresence = reducedMotion ? 0 : tunnelArrival(tunnelPhase) * activeTunnelState.tunnel;
+  const activeTunnelState = transitState ?? sceneStates.reduce((best, current) => (current.tunnel > best.tunnel ? current : best));
+  const visualTunnelIntensity = reducedMotion ? 0 : tunnelIntensity;
+  const tunnelScaleIntensity = visualTunnelIntensity * visualTunnelIntensity;
+  const tunnelPhase = transitState ? activeTunnelState.tunnelProgress : 0;
+  const readoutIntensity = visualTunnelIntensity * tunnelReadoutFade(tunnelPhase);
+  const arrivalPresence = reducedMotion ? 0 : tunnelArrival(tunnelPhase) * visualTunnelIntensity;
   const projectPresence = Math.max(...sceneStates.map(({ opacity }) => opacity), arrivalPresence);
   const activeIndex = activeScene ? activeScene.index + 1 : 0;
   const activeSide = activeScene ? (activeScene.side === 'right' ? 1 : -1) : 0;
-  const activePhase = tunnelIntensity > 0.3 ? 'Transit Corridor' : activeScene?.entry.codename ?? 'Deep Field';
+  const activePhase = visualTunnelIntensity > 0.3 ? 'Transit Corridor' : activeScene?.entry.codename ?? 'Deep Field';
   const atlasDepth = Math.round(scrollProgress * 8191)
     .toString()
     .padStart(4, '0');
 
   const narrativeStyle = {
     '--deep-opacity': heroOpacity,
-    '--tunnel-intensity': tunnelIntensity,
+    '--tunnel-intensity': visualTunnelIntensity,
     '--project-presence': projectPresence,
-    '--field-scale': 1 + scrollProgress * 0.08 + tunnelIntensity * 0.68,
+    '--field-scale': 1 + scrollProgress * 0.08 + tunnelScaleIntensity * 0.58,
     '--field-dim': 0.68 + projectPresence * 0.12,
     '--scan-opacity': tunnelIntensity,
     '--registry-opacity': projectPresence
@@ -161,14 +173,14 @@ export function SignalAtlasExperience({ config, warning }: SignalAtlasExperience
         <CosmicShaderBackground
           focusIndex={activeIndex}
           focusSide={activeSide}
-          tunnelIntensity={tunnelIntensity}
+          tunnelIntensity={visualTunnelIntensity}
           tunnelPhase={tunnelPhase}
           projectPresence={projectPresence}
         />
         <TransitStarfieldCanvas
           focusIndex={activeIndex}
           focusSide={activeSide}
-          tunnelIntensity={tunnelIntensity}
+          tunnelIntensity={visualTunnelIntensity}
           tunnelPhase={tunnelPhase}
           reducedMotion={reducedMotion}
         />
@@ -204,9 +216,9 @@ export function SignalAtlasExperience({ config, warning }: SignalAtlasExperience
         <p>{config.identity.description}</p>
       </section>
 
-      <div className="tunnel-readout" style={{ opacity: tunnelIntensity }} aria-hidden="true">
+      <div className="tunnel-readout" style={{ opacity: readoutIntensity }} aria-hidden="true">
         <span>Long-range transit</span>
-        <strong>{activeScene?.entry.codename ?? 'SCANNING'}</strong>
+        <strong>{activeScene?.entry.codename ?? 'DEEP FIELD'}</strong>
       </div>
 
       {sceneStates.map(({ scene, opacity }) => (
