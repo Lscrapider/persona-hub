@@ -38,6 +38,10 @@ type ProjectScene = {
 
 const SCENE_FADE_IN = 0.062;
 const SCENE_FADE_OUT = 0.06;
+const PROJECT_HANDOFF_PRESENCE = 0.52;
+const FIELD_TRANSIT_PRESENCE = 0.52;
+const FIELD_PROJECT_SCALE_GAIN = 0.16;
+const FIELD_SCROLL_SCALE_GAIN = 0.06;
 const NARRATIVE_WINDOWS = [
   { start: 0.22, end: 0.38, tunnelStart: 0.12, tunnelEnd: 0.25 },
   { start: 0.46, end: 0.62, tunnelStart: 0.34, tunnelEnd: 0.5 },
@@ -73,11 +77,11 @@ function tunnelProgress(progress: number, start: number, end: number) {
 }
 
 function tunnelArrival(progress: number) {
-  return range(progress, 0.64, 1);
+  return smoothRange(progress, 0.64, 1);
 }
 
 function tunnelReadoutFade(progress: number) {
-  return 1 - smoothRange(progress, 0.78, 1);
+  return 1 - smoothRange(progress, 0.48, 0.76);
 }
 
 function statusLabel(status: AtlasProjectStatus) {
@@ -157,7 +161,16 @@ export function SignalAtlasExperience({ config, warning }: SignalAtlasExperience
     scene,
     opacity: sceneOpacity(scrollProgress, scene.start, scene.end),
     tunnel: reducedMotion ? 0 : tunnelPulse(scrollProgress, scene.tunnelStart, scene.tunnelEnd),
-    tunnelProgress: tunnelProgress(scrollProgress, scene.tunnelStart, scene.tunnelEnd)
+    tunnelProgress: tunnelProgress(scrollProgress, scene.tunnelStart, scene.tunnelEnd),
+    handoff:
+      !reducedMotion && scrollProgress >= scene.tunnelStart && scrollProgress <= scene.start + SCENE_FADE_IN
+        ? tunnelArrival(tunnelProgress(scrollProgress, scene.tunnelStart, scene.tunnelEnd)) * PROJECT_HANDOFF_PRESENCE
+        : 0,
+    fieldTransit:
+      !reducedMotion && scrollProgress >= scene.tunnelStart && scrollProgress <= scene.start + SCENE_FADE_IN
+        ? smoothRange(tunnelProgress(scrollProgress, scene.tunnelStart, scene.tunnelEnd), 0.12, 0.86) *
+          FIELD_TRANSIT_PRESENCE
+        : 0
   }));
   const transitState =
     sceneStates.find(({ scene }) => scrollProgress >= scene.tunnelStart && scrollProgress <= scene.tunnelEnd) ?? null;
@@ -168,11 +181,12 @@ export function SignalAtlasExperience({ config, warning }: SignalAtlasExperience
   const tunnelIntensity = Math.max(...sceneStates.map(({ tunnel }) => tunnel), 0);
   const activeTunnelState = transitState ?? sceneStates.reduce((best, current) => (current.tunnel > best.tunnel ? current : best));
   const visualTunnelIntensity = reducedMotion ? 0 : tunnelIntensity;
-  const tunnelScaleIntensity = visualTunnelIntensity * visualTunnelIntensity;
   const tunnelPhase = transitState ? activeTunnelState.tunnelProgress : 0;
-  const readoutIntensity = visualTunnelIntensity * tunnelReadoutFade(tunnelPhase);
-  const arrivalPresence = reducedMotion ? 0 : tunnelArrival(tunnelPhase) * visualTunnelIntensity;
-  const projectPresence = Math.max(...sceneStates.map(({ opacity }) => opacity), arrivalPresence);
+  const transitOverlayIntensity = visualTunnelIntensity * tunnelReadoutFade(tunnelPhase);
+  const readoutIntensity = transitOverlayIntensity;
+  const projectPresence = Math.max(...sceneStates.map(({ opacity, handoff }) => Math.max(opacity, handoff)), 0);
+  const fieldTransitPresence = Math.max(...sceneStates.map(({ fieldTransit }) => fieldTransit), 0);
+  const fieldScalePresence = Math.max(projectPresence, fieldTransitPresence);
   const activeIndex = activeScene ? activeScene.index + 1 : 0;
   const activeSide = activeScene ? (activeScene.side === 'right' ? 1 : -1) : 0;
   const activePhase = visualTunnelIntensity > 0.3 ? 'Transit Corridor' : activeScene?.entry.codename ?? 'Deep Field';
@@ -261,10 +275,11 @@ export function SignalAtlasExperience({ config, warning }: SignalAtlasExperience
   const narrativeStyle = {
     '--deep-opacity': heroOpacity,
     '--tunnel-intensity': visualTunnelIntensity,
+    '--transit-opacity': transitOverlayIntensity,
     '--project-presence': projectPresence,
     '--boundary-opacity': boundaryOpacity,
     '--traverse-opacity': traverseOpacity,
-    '--field-scale': 1 + scrollProgress * 0.08 + tunnelScaleIntensity * 0.58,
+    '--field-scale': 1 + scrollProgress * FIELD_SCROLL_SCALE_GAIN + fieldScalePresence * FIELD_PROJECT_SCALE_GAIN,
     '--field-dim': 0.68 + projectPresence * 0.12,
     '--scan-opacity': tunnelIntensity,
     '--registry-opacity': projectPresence
@@ -283,7 +298,7 @@ export function SignalAtlasExperience({ config, warning }: SignalAtlasExperience
         <TransitStarfieldCanvas
           focusIndex={activeIndex}
           focusSide={activeSide}
-          tunnelIntensity={visualTunnelIntensity}
+          tunnelIntensity={transitOverlayIntensity}
           tunnelPhase={tunnelPhase}
           reducedMotion={reducedMotion}
         />

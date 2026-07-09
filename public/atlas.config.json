@@ -15,7 +15,7 @@
   "projects": [
     {
       "codename": "MINT-01",
-      "title": "Finance Management AI \n",
+      "title": "Finance Management AI",
       "summary": "一个个人理财投资相关内容的 AI 知识库入口（不对外）。",
       "url": "http://152.136.174.90/finance/",
       "signalType": "Knowledge Signal",
@@ -29,7 +29,7 @@
     },
     {
       "codename": "DARK NODE",
-      "title": "Urban Sidequest\n",
+      "title": "Urban Sidequest",
       "summary": "基于城市副本的旅游APP。",
       "url": "https://github.com/Lscrapider/urban-sidequest",
       "signalType": "Journey Signal",
@@ -43,7 +43,7 @@
     },
     {
       "codename": "FUTURE SIGNAL",
-      "title": "期待未来坐标\n",
+      "title": "期待未来坐标",
       "summary": "等待新的信号进入星图中。",
       "url": null,
       "signalType": "Reserved Nebula",

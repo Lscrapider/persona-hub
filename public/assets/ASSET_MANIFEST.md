@@ -12,12 +12,12 @@
 
 ## Generated Project Assets
 
-### `generated/deep-field-observatory-2k-source.png`
+### `docs/credits/assets/generated/deep-field-observatory-2k-source.png`
 
 - Source: OpenAI image generation via Codex imagegen skill.
 - Date: 2026-07-08.
 - Prompt summary: crisp 2K deep-field observatory background plate with layered nebula dust, distant galaxy clusters, star-forming regions, cyan and amber spectral glints, darker text-safe space, no planets, UI, text, wireframe, or watermark.
-- Use: source plate for the WebGL fallback background.
+- Use: archived source plate for the WebGL fallback background. Kept outside `public/` because it is not served at runtime.
 - Policy fit: generated raster fallback asset.
 
 ### `generated/deep-field-observatory-2k.png`
@@ -28,12 +28,12 @@
 - Use: WebGL fallback background when the shader canvas is unavailable.
 - Policy fit: generated raster artwork retained as a fallback asset.
 
-### `generated/boot-calibration-source.png`
+### `docs/credits/assets/generated/boot-calibration-source.png`
 
 - Source: OpenAI image generation via Codex imagegen skill.
 - Date: 2026-07-08.
 - Prompt summary: cinematic deep-field observatory boot calibration plate with a spectral imaging sensor, nebula dust, cyan/amber photons, no text, no UI labels, no crosshairs, no planets, and no watermark.
-- Use: source frame for the loading sequence.
+- Use: archived source frame for the loading sequence. Kept outside `public/` because it is not served at runtime.
 - Policy fit: generated raster asset, not CSS/vector-drawn artwork.
 
 ### `generated/boot-calibration-loop.webp`
@@ -51,12 +51,12 @@
 - Use: reduced-motion loading fallback.
 - Policy fit: static generated-raster derivative.
 
-### `generated/mint-signal-source.png`
+### `docs/credits/assets/generated/mint-signal-source.png`
 
 - Source: OpenAI image generation via Codex imagegen skill.
 - Date: 2026-07-08.
 - Prompt summary: irregular emerald-cyan knowledge signal anomaly, compact organic spectral bloom, no text, no target rings, no wireframe, no icon, no planet, and no watermark.
-- Use: source frame for the MINT-01 signal object.
+- Use: archived source frame for the MINT-01 signal object. Kept outside `public/` because it is not served at runtime.
 - Policy fit: generated raster signal object, not CSS/vector-drawn reticle art.
 
 ### `generated/mint-signal-loop.webp`
@@ -74,12 +74,12 @@
 - Use: reduced-motion MINT-01 coordinate target.
 - Policy fit: static generated-raster derivative.
 
-### `generated/dark-node-source.png`
+### `docs/credits/assets/generated/dark-node-source.png`
 
 - Source: OpenAI image generation via Codex imagegen skill.
 - Date: 2026-07-08.
 - Prompt summary: irregular dark violet-charcoal and ember-orange dormant signal anomaly, asymmetric spectral knot, no text, no target rings, no wireframe, no icon, no planet, and no watermark.
-- Use: source frame for the DARK NODE signal object.
+- Use: archived source frame for the DARK NODE signal object. Kept outside `public/` because it is not served at runtime.
 - Policy fit: generated raster signal object, not CSS/vector-drawn reticle art.
 
 ### `generated/dark-node-loop.webp`
@@ -97,12 +97,12 @@
 - Use: reduced-motion DARK NODE coordinate target.
 - Policy fit: static generated-raster derivative.
 
-### `generated/deep-field-observatory.png`
+### `docs/credits/assets/generated/deep-field-observatory.png`
 
 - Source: OpenAI image generation via Codex imagegen skill.
 - Date: 2026-07-08.
 - Prompt summary: cinematic hand-painted deep field observatory plate with layered nebula dust, distant galaxy clusters, spectral haze, mineral green and amber signal glints, no planets, no spherical celestial bodies, no UI text, and no watermark.
-- Use: previous generated background. Retained for reference, not referenced by the active homepage.
+- Use: previous generated background. Archived outside `public/` for reference, not referenced by the active homepage.
 - Policy fit: high-quality generated raster asset. Code only composes, crops, masks, filters, and moves the image.
 
 ### `generated/signal-acquisition-texture.png`
@@ -115,9 +115,9 @@
 
 ## Retained Reference Assets
 
-The previous NASA and artist-concept space assets remain under `space/` for provenance and possible future reference, but the current homepage no longer uses them as primary visuals.
+The previous NASA and artist-concept space assets are archived under `docs/credits/assets/space/` for provenance and possible future reference. The current homepage no longer uses them as primary visuals, so they are kept outside `public/`.
 
-### `space/deep-field-abell-1689.jpg`
+### `docs/credits/assets/space/deep-field-abell-1689.jpg`
 
 - Source: NASA Image and Video Library.
 - NASA ID: `GSFC_20171208_Archive_e002174`.
@@ -126,7 +126,7 @@ The previous NASA and artist-concept space assets remain under `space/` for prov
 - Credit: `NASA/Goddard Space Flight Center/Scientific Visualization Studio/ESA/L. Bradley/JHU`.
 - Current use: retained, not referenced by the active homepage.
 
-### `space/carina-nebula.png`
+### `docs/credits/assets/space/carina-nebula.png`
 
 - Source: NASA Image and Video Library.
 - NASA ID: `carina_nebula`.
@@ -135,7 +135,7 @@ The previous NASA and artist-concept space assets remain under `space/` for prov
 - Credit: `NASA, ESA, CSA, STScI`.
 - Current use: retained, not referenced by the active homepage.
 
-### `space/southern-ring-nebula.png`
+### `docs/credits/assets/space/southern-ring-nebula.png`
 
 - Source: NASA Image and Video Library.
 - NASA ID: `southern_ring_nebula`.
@@ -144,7 +144,7 @@ The previous NASA and artist-concept space assets remain under `space/` for prov
 - Credit: `NASA, ESA, CSA, STScI`.
 - Current use: retained, not referenced by the active homepage.
 
-### `space/exoplanet-debris-disk.jpg`
+### `docs/credits/assets/space/exoplanet-debris-disk.jpg`
 
 - Source: NASA Image and Video Library.
 - NASA ID: `PIA22082`.

@@ -179,34 +179,49 @@ export function TransitStarfieldCanvas({
       }
     };
 
+    const scheduleRender = () => {
+      if (frame || disposed || document.hidden) return;
+
+      frame = window.requestAnimationFrame(render);
+    };
+
     const render = () => {
       if (disposed) return;
 
-      resize();
+      frame = 0;
       drawTransitField(context, starsRef.current, sceneRef.current, canvas.width, canvas.height);
 
       if (!document.hidden && !sceneRef.current.reducedMotion) {
-        frame = window.requestAnimationFrame(render);
+        scheduleRender();
       }
     };
 
     const handleVisibilityChange = () => {
       window.cancelAnimationFrame(frame);
+      frame = 0;
 
       if (!document.hidden && !disposed) {
-        frame = window.requestAnimationFrame(render);
+        scheduleRender();
       }
     };
 
+    const handleResize = () => {
+      resize();
+      scheduleRender();
+    };
+
     resize();
-    render();
-    window.addEventListener('resize', resize);
+    scheduleRender();
+    const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(handleResize) : null;
+    resizeObserver?.observe(canvas);
+    window.addEventListener('resize', handleResize);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       disposed = true;
       window.cancelAnimationFrame(frame);
-      window.removeEventListener('resize', resize);
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', handleResize);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);

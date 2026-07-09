@@ -19,11 +19,12 @@ Scra Atlas may use:
 
 ## Source Hygiene
 
-- Keep final committed assets in `public/assets/` when they are binary assets.
+- Keep final runtime assets in `public/assets/` when they are binary assets.
+- Keep large source plates and retained reference media under `docs/credits/assets/` when they are needed for provenance but not served by the homepage.
 - Record important generated or external visual assets in `public/assets/ASSET_MANIFEST.md`.
 - When an external code or shader source is used as a reference, keep enough notes for future maintenance.
 - When license terms are known, follow them. When provenance is uncertain, document the decision clearly so it can be revisited later.
 
 ## Current Status
 
-The active homepage uses `src/features/signal/CosmicShaderBackground.tsx` as the primary visual background. Raster assets documented in `public/assets/ASSET_MANIFEST.md` remain active for boot, fallback, and optional overlays.
+The active homepage uses `src/features/signal/CosmicShaderBackground.tsx` as the primary visual background. Runtime raster assets documented in `public/assets/ASSET_MANIFEST.md` remain in `public/assets/`; archived source and reference images live under `docs/credits/assets/` so they do not inflate the production build.

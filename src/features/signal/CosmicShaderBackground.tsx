@@ -113,10 +113,7 @@ void main() {
   float lens = smoothstep(0.58, 0.0, length(p - pointer * 1.6));
   p += (pointer - p) * lens * 0.007;
 
-  vec2 tunnelTarget = vec2(u_side * 0.4, -0.03);
-  vec2 zoomOrigin = mix(vec2(0.0), tunnelTarget, transitArrival);
-  float zoomScale = mix(1.0, 0.14, tunnel * launch * (1.0 - transitArrival * 0.42));
-  vec2 zoomedP = zoomOrigin + (p - zoomOrigin) * zoomScale;
+  vec2 zoomedP = p;
 
   vec2 slowWarp = flowWarp(zoomedP * 1.06, t);
   vec2 field = zoomedP + slowWarp * (0.18 + tunnel * 0.08);
@@ -179,7 +176,7 @@ void main() {
   color *= 1.0 - darkFilament * localClouds * 0.28;
 
   vec2 projectCenter = vec2(u_side * 0.42, -0.03);
-  float arrivalScale = mix(0.16, 0.74, max(transitArrival, project));
+  float arrivalScale = mix(0.16, 0.74, project);
   float projectScale = arrivalScale * projectSizeBalance;
   vec2 projectLocal = (field - projectCenter) / projectScale;
   vec2 projectSpace = rotate2d(u_side * (0.32 + focusTwo * 0.32 - focusFuture * 0.18)) * projectLocal;
