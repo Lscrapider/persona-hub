@@ -1,39 +1,44 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { siteContent, siteNavigation } from "@/content/site";
+import { getArchiveSection } from "@/content/archive";
+import { siteNavigation } from "@/content/site";
+import { CopyReveal } from "@/effects/primitives/CopyReveal";
+import { useActiveArchiveSection } from "@/features/archive/useActiveArchiveSection";
 
-function isActivePath(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
+type SiteHeaderProps = Readonly<{
+  revealEnabled: boolean;
+}>;
 
-export function SiteHeader() {
+export function SiteHeader({ revealEnabled }: SiteHeaderProps) {
   const pathname = usePathname();
+  const isHome = pathname === "/";
+  const activeSectionId = useActiveArchiveSection(isHome);
+  const activeSection = activeSectionId
+    ? getArchiveSection(activeSectionId)
+    : null;
 
   return (
-    <header className="site-header">
-      <Link className="site-header__identity" href="/">
-        {siteContent.name}
-      </Link>
-
+    <header
+      className="site-header"
+      data-surface={activeSection?.surface ?? "bone"}
+    >
       <nav aria-label="Primary navigation">
         <ul className="site-header__navigation">
           {siteNavigation.map((item) => {
-            const isActive = isActivePath(pathname, item.href);
-            const isCurrentPage = pathname === item.href;
+            const isActive = item.id === activeSectionId;
 
             return (
-              <li key={item.href}>
-                <Link
-                  aria-current={isCurrentPage ? "page" : undefined}
+              <li key={item.id}>
+                <a
+                  aria-current={isActive ? "location" : undefined}
                   className="site-header__link"
                   data-active={isActive || undefined}
                   href={item.href}
                 >
-                  {item.label}
-                </Link>
+                  <CopyReveal enabled={revealEnabled} text={item.label} />
+                </a>
               </li>
             );
           })}

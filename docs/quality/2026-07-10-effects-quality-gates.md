@@ -1,105 +1,57 @@
-# Scra Atlas 特效质量门槛
+# Scra Atlas effects quality gates
 
-**状态：当前有效**  
-**更新日期：2026-07-10**
+**Status:** current
+**Updated:** 2026-07-10
 
-任何主秀效果在进入正式页面前，都要通过视觉、性能、响应式和无障碍四类验收。构建成功不等于特效完成。
+A production build is not sufficient evidence that an effect is finished. Every change must pass visual, responsive, accessibility, lifecycle, and build checks.
 
-## 视觉验收
+## Required viewport checks
 
-### 必查视口
+- 1440 by 900 desktop
+- 1280 by 800 laptop
+- 390 by 844 mobile
+- 360 by 800 narrow mobile
+- one FULL and one STATIC check at a representative viewport
 
-- 1440 × 900：主要桌面构图。
-- 1280 × 800：常见笔记本。
-- 390 × 844：主流手机。
-- 360 × 800：窄手机。
-- 上述至少一个视口的 reduced 与 static 模式。
+## Visual checks
 
-### 关键状态
+- The first desktop fold restores the wide bone information field, oversized single-line title, right-edge near-black off-canvas curved word field, and lower Current Index threshold.
+- The curved word field reaches the browser's right edge, supports hierarchy without obscuring title, status, signature, or CTA, and never reads as a complete floating ball or a clipped inner panel.
+- Reader-facing copy is visible in its final form before any optional reveal.
+- No text crops, overflows, or loses contrast. The Header is intentionally absent until a final placement is chosen.
+- No repeated rounded-card grids, gradient text, wide ghost shadows, glass panels, fake terminal status codes, or copied visual branding.
+- The Hero static frame remains a coherent composition.
+- Actual browser screenshots or recording are required for final visual approval.
 
-每个主秀至少保存并检查以下画面：
+## Navigation and accessibility checks
 
-1. 动画开始前或静态初始帧。
-2. 进入编排的中间状态。
-3. 完整稳定状态。
-4. hover / focus / 触摸选择状态。
-5. 离场或转移状态。
-6. reduced-motion 最终状态。
-7. 渲染器失败后的回退状态。
+- Each archive module has a labelled section, id, and safe anchor scroll margin.
+- Stored Header anchors reach the correct fragments with native browser history when the component is rendered again.
+- IntersectionObserver highlights the current module without a scroll listener or URL rewriting.
+- aria-current="location" appears only on the active archive link.
+- EntryGate prevents keyboard focus from reaching the archive shell while visible. With JavaScript disabled, content remains readable because the gate is skipped.
+- Focus remains visible on CTA, Current Index, controls, and archive links.
+- Assistive technology receives stable final reader text; decorative Canvas text and scramble glyphs are hidden.
+- There is no required hover-only information.
 
-### 通过标准
+## Mode and lifecycle checks
 
-- 三秒内能识别页面的主要身份和操作入口。
-- 十秒内能理解主秀与内容的关系，不只是“有动画”。
-- 静止截图仍然具有明确构图和视觉中心。
-- 同一视口没有两个同等强度的主动画争抢注意力。
-- 没有文字溢出、遮挡、不可读对比、错误裁切或层级穿透。
-- 不出现通用 AI 网站特征：重复圆角卡片、渐变文字、无意义编号眉题、玻璃面板、宽泛发光阴影。
-- 不出现廉价科技感：持续乱码、遍地扫描线、随机粒子尾巴、霓虹 cyan / magenta 堆叠、假终端刷屏。
+- FULL: CopyReveal plays once per visible reader item; the Typewriter and Canvas text-track scene are the only persistent motion systems.
+- STATIC: complete text and a final Hero frame appear immediately with no visual animation.
+- System reduced motion initially resolves to STATIC.
+- A persisted manual FULL choice remains effective even when the system preference requests reduced motion.
+- The Hero Typewriter and Canvas tracks pause while the Hero is off-screen or the page is hidden.
+- A mode switch, scene error, or unavailable enhancement leaves a readable and non-empty static fallback.
 
-最终视觉验收必须包含浏览器实机截图或录屏，不能只看代码或组件树。
+## Performance and implementation checks
 
-## 性能预算
+- Canvas is restricted to the aria-hidden Hero word field, which has one activity-gated rAF loop. No WebGL, shaders, particles, Lenis, scroll snap, or permanent rAF loop is added.
+- Canvas has a bounded set of concentric text tracks and no route, node, dotted-guide, or floating-label graphics.
+- On stable bounds and fonts, FULL reuses geometry and glyph-advance layout, skips whitespace and off-viewport anchors before drawing, and uses a 1.5x backing-store cap. STATIC may use 2x because it has no frame loop.
+- No scene load shifts semantic content or leaves an empty scene slot.
+- Build, TypeScript, and lint pass without console errors or hydration warnings.
+- The user performs visual review at desktop and mobile sizes. Automated checks cover type, lint, and build output; no browser acceptance pass is claimed by the agent for this iteration.
 
-以下为正式验收目标；视觉原型阶段可以暂时超出，但必须记录原因。
+## Verification record
 
-- LCP：正常网络与中端移动设备模拟下不高于 2.5 秒。
-- CLS：不高于 0.1；字体和动画不能造成可见跳动。
-- INP：不高于 200 ms。
-- 主线程交互处理：单次目标低于 50 ms，不出现由特效引起的 100 ms 以上长任务。
-- 桌面主动画：目标接近 60 fps，活动阶段绝大多数帧低于 20 ms。
-- 中端移动端：目标不低于 45 fps；无法维持时自动进入 reduced 或 static。
-- 离屏或后台场景：停止连续 animation frame 和 GPU 更新。
-- 初始可读内容不等待主秀依赖加载；重型场景必须可拆分和懒加载。
-
-包体预算在技术原型确定后按构建工具记录，但需要满足两个原则：
-
-1. 未访问的 Lab 或项目详情效果不进入首页首包。
-2. 任何大型依赖必须对应肉眼可见且无法用更小方案达到的质量收益。
-
-## 无障碍验收
-
-- 键盘可以完成导航、项目树展开、节点选择、关闭面板和打开文章。
-- focus-visible 始终清楚，不被 Canvas、遮罩或转场覆盖。
-- 屏幕阅读器读取的是最终文本，不读取随机 scramble 字符和重复装饰文字。
-- 装饰性 SVG、Canvas、WebGL 和背景文字场不进入可访问树。
-- reduced 模式取消连续旋转、视差、追随、字符扰动和大范围位移。
-- static 模式仍然保留层级、状态、路径和所有操作。
-- 不使用每秒超过三次的高对比闪烁。
-- 自动运动提供停止或降低强度的入口。
-- 内容不依赖颜色或运动方向作为唯一状态提示。
-
-## 响应式与输入验收
-
-- 所有主要流程分别用鼠标、键盘和触摸验证。
-- coarse pointer 下不保留只能 hover 触发的信息。
-- 移动端不渲染不可见的桌面装饰层后再用 CSS 隐藏。
-- sticky 场景在短屏、横屏和浏览器地址栏变化时不会锁住内容。
-- 锚点、前进后退和刷新后的位置恢复不被平滑滚动或转场破坏。
-- 320 px 宽度下仍可访问所有正文和控件。
-
-## 失败与恢复验收
-
-主动模拟以下情况：
-
-- JavaScript 延迟或关闭。
-- 场景依赖加载失败。
-- Canvas context 或 WebGL context 创建失败。
-- 页面快速前进、后退和连续切换路由。
-- 进入动画中途切换标签页。
-- 用户在运行中切换 full、reduced 和 static。
-
-所有情况下都必须恢复到可导航、可阅读的状态，不留下透明正文、锁定滚动、永久遮罩或未释放输入监听。
-
-## 验收记录
-
-每个主秀效果交付时附带：
-
-- 实现技术和选择理由。
-- 参考来源与许可记录。
-- 桌面和移动端截图或录屏。
-- 性能测量环境和结果。
-- reduced / static 行为说明。
-- 已知限制与下一步。
-
-本项目未经用户同意不创建单元测试。质量验证可以使用生产构建、浏览器检查、性能面板、键盘走查、响应式截图、减少动画模拟和运行时故障演练。
+Record the commands run, browser viewports inspected, mode behavior checked, static fallback evidence, and any blocked build or browser check. This project does not create unit tests without explicit user approval.

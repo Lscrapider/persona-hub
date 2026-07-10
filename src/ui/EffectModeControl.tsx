@@ -5,7 +5,6 @@ import { useEffectMode } from "@/effects/runtime/EffectMode";
 
 const EFFECT_MODE_LABELS: Record<EffectMode, string> = {
   full: "FULL",
-  reduced: "REDUCED",
   static: "STATIC",
 };
 
@@ -13,11 +12,7 @@ export function EffectModeControl() {
   const { mode, setMode } = useEffectMode();
 
   return (
-    <div
-      aria-label="Effect intensity"
-      className="effect-mode-control"
-      role="group"
-    >
+    <div aria-label="Effect mode" className="effect-mode-control" role="group">
       <span className="effect-mode-control__label">EFFECTS</span>
       {EFFECT_MODES.map((effectMode) => {
         const isActive = mode === effectMode;

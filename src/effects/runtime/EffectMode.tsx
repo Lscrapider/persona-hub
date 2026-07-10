@@ -60,7 +60,7 @@ export function EffectModeProvider({ children }: EffectModeProviderProps) {
         systemReduced = mediaQuery.matches;
       }
     } catch {
-      // Continue with the non-reduced system default when media queries fail.
+      // The safe STATIC bootstrap remains valid when media queries are unavailable.
     }
 
     let storedMode: string | null = null;
@@ -68,10 +68,10 @@ export function EffectModeProvider({ children }: EffectModeProviderProps) {
     try {
       storedMode = window.localStorage.getItem(EFFECT_MODE_STORAGE_KEY);
     } catch {
-      // Storage can be unavailable in privacy-restricted browsing contexts.
+      // The in-memory preference remains usable when storage is unavailable.
     }
 
-    // This is the initial browser-only snapshot of two external preferences.
+    // The initial browser snapshot joins storage and system preference after hydration.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPreferences({
       userMode: isEffectMode(storedMode) ? storedMode : null,
@@ -84,7 +84,7 @@ export function EffectModeProvider({ children }: EffectModeProviderProps) {
         mediaQuery.addEventListener("change", handleSystemPreferenceChange);
         listenerRegistered = true;
       } catch {
-        // The initial preference still applies when change events are unavailable.
+        // The initial preference still applies if listener registration is rejected.
       }
     }
 
@@ -100,7 +100,7 @@ export function EffectModeProvider({ children }: EffectModeProviderProps) {
       try {
         mediaQuery.removeEventListener("change", handleSystemPreferenceChange);
       } catch {
-        // Cleanup cannot recover when a browser rejects listener removal.
+        // Cleanup cannot repair a browser that rejects listener removal.
       }
     };
   }, []);
@@ -112,38 +112,20 @@ export function EffectModeProvider({ children }: EffectModeProviderProps) {
       resolved: true,
     }));
 
-    if (typeof window === "undefined") {
-      return;
-    }
-
     try {
       window.localStorage.setItem(EFFECT_MODE_STORAGE_KEY, nextMode);
     } catch {
-      // The in-memory preference still applies for the current page lifecycle.
+      // The current in-memory selection remains authoritative for this page visit.
     }
   }, []);
 
   const mode = preferences.resolved
     ? resolveEffectMode(preferences.userMode, preferences.systemReduced)
-    : "reduced";
+    : "static";
 
   useEffect(() => {
     const root = document.documentElement;
-    const previousMode = root.dataset.effectMode;
-
     root.dataset.effectMode = mode;
-
-    return () => {
-      if (root.dataset.effectMode !== mode) {
-        return;
-      }
-
-      if (previousMode) {
-        root.dataset.effectMode = previousMode;
-      } else {
-        delete root.dataset.effectMode;
-      }
-    };
   }, [mode]);
 
   const value = useMemo(

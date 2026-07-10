@@ -1,14 +1,16 @@
-export type NavigationItem = {
-  label: string;
-  href: `/${string}` | "/";
-};
+import {
+  archiveSections,
+  projectRecords,
+  type ArchiveSectionDefinition,
+  type ProjectRecord,
+} from "@/content/archive";
 
-export type IndexItem = {
-  id: string;
-  title: string;
-  meta: string;
-  href: string;
-};
+export type NavigationItem = Pick<
+  ArchiveSectionDefinition,
+  "id" | "label" | "href" | "surface"
+>;
+
+export type IndexItem = ProjectRecord;
 
 export const siteContent = {
   name: "Scra Atlas",
@@ -19,16 +21,16 @@ export const siteContent = {
   },
   archiveAction: {
     label: "Enter archive",
-    href: "/projects",
+    href: "/#projects",
   },
 } as const;
 
-export const siteNavigation = [
-  { label: "Projects", href: "/projects" },
-  { label: "Logs", href: "/blog" },
-  { label: "Timeline", href: "/timeline" },
-  { label: "Lab", href: "/lab" },
-] as const satisfies readonly NavigationItem[];
+export const siteNavigation = archiveSections.map(({ href, id, label, surface }) => ({
+  id,
+  label,
+  href,
+  surface,
+})) satisfies readonly NavigationItem[];
 
 export const siteStatus = {
   status: "Active",
@@ -36,23 +38,4 @@ export const siteStatus = {
   updated: "2026",
 } as const;
 
-export const currentIndex = [
-  {
-    id: "01",
-    title: "Financial Intelligence",
-    meta: "Models, data, signals",
-    href: "/projects",
-  },
-  {
-    id: "02",
-    title: "Urban Sidequest",
-    meta: "Experiments, products, places",
-    href: "/projects",
-  },
-  {
-    id: "03",
-    title: "Infrastructure Lab",
-    meta: "Systems, platforms, tooling",
-    href: "/lab",
-  },
-] as const satisfies readonly IndexItem[];
+export const currentIndex = projectRecords satisfies readonly IndexItem[];

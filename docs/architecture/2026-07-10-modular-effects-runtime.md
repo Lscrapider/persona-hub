@@ -1,176 +1,86 @@
-# Scra Atlas 模块化特效运行时架构
+# Scra Atlas modular effects runtime
 
-**状态：当前有效**  
-**更新日期：2026-07-10**
+**Status:** current
+**Updated:** 2026-07-10
 
-## 架构目标
+## Purpose
 
-- 内容、页面状态、视觉编排和底层渲染可以独立替换。
-- 单个效果崩溃、性能下降或被禁用时，不影响导航和内容。
-- 特效可以大胆，但影响范围必须可控。
-- 技术选型服务于效果质量，不由全局偏好提前锁死。
+The runtime keeps content, semantic page structure, one-time copy entry, and continuous Hero motion independently replaceable. A scene failure, a preference change, or an unavailable browser feature must not block navigation or reading.
 
-## 当前技术基线
+## Current page boundary
 
-以下选择作为实现计划的默认起点。版本号在实现计划中根据当时的官方稳定版本锁定。
+~~~text
+src/content
+  -> archive data
+  -> feature sections
+  -> HomeExperience composition
+  -> shared effects and Hero scene
+  -> semantic DOM and Hero Canvas 2D
+~~~
 
-- **Next.js App Router + React + TypeScript**：负责路由、页面 metadata、服务端内容渲染和客户端交互边界。没有交互需求的内容默认保持服务端渲染；主秀场景才进入客户端边界。参考 [Next.js App Router 官方文档](https://nextjs.org/docs/app)。
-- **Tailwind CSS + CSS custom properties**：Tailwind 负责布局和常规样式，CSS variables 负责主题、层级、效果强度和可被渲染器共享的参数。场景专属复杂样式可以使用同目录 CSS，不把全部视觉塞进 utility class。
-- **Motion for React**：负责组件进入退出、布局变化、手势、SVG 路径和共享 motion primitives。它不直接拥有 Canvas/WebGL 绘制循环。参考 [Motion for React 官方文档](https://motion.dev/docs/react)。
-- **本地 Markdown / MDX + Shiki**：负责 Blog 内容和构建时代码高亮。初期不引入 CMS；参考 [Next.js MDX 官方指南](https://nextjs.org/docs/app/guides/mdx) 与 [Shiki 官方文档](https://shiki.style/)。
-- **原生滚动优先**：先用浏览器滚动、Intersection Observer 和 scroll progress 实现叙事。只有视觉原型证明平滑滚动层有明确收益，才隔离引入 Lenis 等库。
-- **GSAP 为条件依赖**：默认不与 Motion 重叠安装。只有某个主秀需要复杂的可控时间线或滚动编排，且 Motion 原型无法满足时，才在该 scene 内引入 GSAP / ScrollTrigger 适配器。参考 [GSAP 官方文档](https://gsap.com/docs/v3/)。
-- **Canvas / WebGL 为场景级能力**：不成为全站前提。需要时通过 renderer adapter 懒加载，语义内容继续由 DOM 提供。
+- Content owns archive ids, labels, summaries, statuses, and project records.
+- Feature sections own their semantic markup and local layouts.
+- HomeExperience composes features in order and exposes whether EntryGate has released archive content.
+- CopyReveal owns once-only visibility observation. It does not know project data or page layout.
+- HomeHero owns the bone information stage and right-edge, off-canvas curved Canvas scene, then passes lifecycle activity to its Typewriter and Canvas scene.
+- SiteHeader owns fragment presentation and obtains active state from an archive-specific observer hook, but is intentionally unmounted while its final placement is deferred.
 
-不引入 Monaco 作为代码展示默认方案；只有真实编辑需求才使用完整编辑器运行时。
+## Effect mode contract
 
-## 分层模型
+~~~ts
+type EffectMode = "full" | "static";
+~~~
 
-```text
-Content
-  ↓
-Feature state
-  ↓
-Scene choreography
-  ↓
-Shared motion primitives
-  ↓
-Renderer adapters
-  ↓
-DOM / CSS / SVG / Canvas / WebGL / media
-```
+- FULL is the normal initial mode when the system does not request reduced motion.
+- STATIC is the initial system-reduced-motion mode and renders final frames with no visual animation.
+- A stored explicit FULL or STATIC choice wins over the system preference.
+- The root data-effect-mode attribute mirrors the resolved mode so CSS and JavaScript use one contract.
+- There is no intermediate effect mode.
 
-### Content
+## Copy reveal contract
 
-保存项目、文章、时间线和站点身份。它不导入组件、动画库或渲染器。
+CopyReveal accepts plain reader-facing text plus a boolean that says archive content is exposed.
 
-### Feature state
+1. Until EntryGate releases the archive, CopyReveal shows the final text and does not begin observing.
+2. In STATIC, it always shows the final text.
+3. In FULL, it observes its own span with IntersectionObserver.
+4. The first visible entry starts once and is remembered for that mounted item.
+5. Latin and numeric text uses an aria-hidden scramble visual with stable accessible text.
+6. Chinese text uses a one-time visual clip or mask without random characters.
+7. The scramble measurement and visual layers inherit their host's white-space behavior, so a decoding frame cannot alter a title's line breaks or a row's layout.
 
-处理当前项目、展开节点、文章筛选、时间线活动记录等业务状态。它决定“发生什么”，不决定像素如何运动。
+This separates the first-visit cover from copy animation and prevents hidden copy from finishing before a visitor can see it.
 
-### Scene choreography
+## Scene lifecycle contract
 
-编排页面独有的主秀效果。它可以理解本 feature 的状态，不要求伪装成全站通用组件。
-
-### Shared motion primitives
-
-提供字符收敛、路径绘制、焦点移动、metadata reveal 和转场等可复用动作。它们不读取项目或文章数据。
-
-### Renderer adapters
-
-隔离 DOM、SVG、Canvas、WebGL 或媒体运行时。上层场景依赖能力接口，不直接散落第三方库调用。
-
-## 建议目录
-
-```text
-src/
-  app/                     路由、metadata、页面组合、错误边界
-  content/                 项目、文章、时间线、站点身份
-  core/                    类型、格式化、URL、locale、能力检测
-  features/
-    home/
-      scene/               Home 专属编排
-    projects/
-      scene/               Project Tree 专属编排
-    blog/
-    timeline/
-    lab/
-  effects/
-    primitives/            resolve、draw、reveal、focus、transfer
-    renderers/             dom、svg、canvas、webgl、media 适配
-    runtime/               调度、可见性、质量模式、性能降级
-  motion/                  时长、缓动、reduced-motion 替代
-  ui/                      可访问的按钮、树、链接、标签、容器
-  styles/                  tokens、字体、全局层级和响应式规则
-```
-
-页面只能组合 feature，不在路由文件中编写复杂时间线。feature 之间不能导入彼此内部组件；确实需要复用的能力提升到 `ui/`、`effects/` 或 `core/`。
-
-## 场景契约
-
-每个主秀场景至少接受以下上下文：
-
-```ts
-type EffectMode = 'full' | 'reduced' | 'static';
-
-type SceneContext = {
-  mode: EffectMode;
-  visible: boolean;
-  focused: boolean;
-  pointer: 'fine' | 'coarse' | 'none';
+~~~ts
+type SceneActivity = {
+  heroVisible: boolean;
+  documentVisible: boolean;
+  active: boolean;
 };
-```
+~~~
 
-场景生命周期为：
+useSceneActivity derives activity from Hero intersection and document visibility. It does not use a scroll listener. On desktop, Hero, stage, scene, and Current Index overlay share one dynamic viewport-height frame without a rem cap; Index is removed from the frame's flow calculation. A separate ResizeObserver measures that final decorative scene only when its rendered box changes; one geometry model derives the Canvas backing-store size, black-surface circular arc, clip path, and orbit radii without participating in scrolling. The arc uses two measured endpoints and a normalized radius factor, avoiding the tangent discontinuity caused by joined Bézier segments. FULL scenes animate only when active. When Hero leaves the viewport or the document becomes hidden, the one Canvas frame loop is cancelled and the elapsed angle is retained. STATIC draws a deterministic frame once.
 
-```text
-dormant → entering → active → exiting → suspended → disposed
-```
+The only persistent homepage work is the Typewriter cycle and one Hero Canvas scene system: all 38 text rings and the pointer dot-substitution field are rendered in a single requestAnimationFrame loop. Canvas uses no runtime randomness. Their slow distinct periods interpolate across a 360-second outer to 160-second inner envelope regardless of track count. Cached glyph layout admits only advances that fit in one exact `0…2π` turn, then reserves the terminal in-turn segment for a complete deterministic `AI`, `PHY`, or `JAVA` connector. This prevents a final glyph from wrapping over the first glyph at the circular seam. Thirteen deliberately distributed bands use deterministic gaps that are three times the earlier length, with a low-alpha `·` at every gap cell, while the other twenty-five continuously repeat dot-free technical copy. The pointer field replaces letter and number glyphs with a medium-alpha `·` at the same anchor, while deliberately retaining the low-alpha connector dots. Track-letter spacing is widened. All tracks share the one responsive font, capped at 66% of the measured radial step and never below 7px, so there is no per-track scale or additional in-turn glyph population. One base-font glyph metric per character is cached. FULL sets that base Canvas font once per frame, avoiding per-track font churn. Cached local sine/cosine values combine with one start-angle pair per track, avoiding per-glyph trigonometry. Before pointer checks, transforms, or `fillText`, the renderer analytically discards an anchor outside the same measured circular black surface, with a font margin to retain the edge treatment; the Canvas clip stays in place as a final visual guard. The scene uses no visible guide rings, floating labels, density rows, routes, or nodes. Every continuous control is cleaned up on change or unmount.
 
-- `suspended` 用于页面隐藏、离屏或性能降级。
-- `disposed` 必须释放事件、observer、animation frame、纹理和 GPU 资源。
-- React 组件卸载不是唯一清理机制，渲染器必须提供显式销毁能力。
+The Canvas renderer caches its derived arc geometry and per-track glyph advances until CSS-pixel bounds or the resolved font changes. Each FULL frame still evaluates the ring positions for smooth motion, but skips whitespace and anchors outside the Canvas rectangle before assigning a direct device-pixel transform and issuing `fillText`; it does not allocate a width map, call `measureText`, or use a save/translate/rotate/restore stack for each glyph. FULL caps the backing store at 1.5 device pixels per CSS pixel, while STATIC may use 2x because it renders only once.
 
-## 渲染技术决策
+## Renderer decision
 
-不设置“Canvas 不好”或“WebGL 更高级”的全局结论。每个场景按下表选择：
+The Hero uses semantic DOM for required information and one aria-hidden Canvas 2D renderer for the dense decorative word field. The user explicitly approved this Hero-only Canvas exception after reference review. Canvas is selected because it draws every ring in one frame and avoids both SVG textPath wrapping gaps and independent per-track animation work. WebGL, shaders, particles, and a permanent animation frame loop remain excluded: requestAnimationFrame runs only while FULL and the Hero scene is active.
 
-| 技术 | 适合 | 不适合 |
-| --- | --- | --- |
-| DOM / CSS | 语义文本、布局、控件、轻量状态变化 | 大量独立对象和逐像素合成 |
-| SVG | 路径文字、连线、精确图形、少量可交互节点 | 数千节点的持续高频更新 |
-| Canvas 2D | 大量点、文字场、纹理合成、可控绘制循环 | 可访问内容和复杂表单交互 |
-| WebGL / shader | 高密度合成、扭曲、滤镜、并行图形计算 | 普通排版、仅为炫技的全屏背景 |
-| Raster / video / Lottie / Rive | 已经完成艺术指导的确定性画面 | 需要实时语义数据和自由交互的核心结构 |
+KineticTypeField has an error-boundary fallback that preserves a static visual region. The Hero remains readable even if the enhanced scene fails.
 
-采用 Canvas 或 WebGL 前，至少制作一个静态构图和一个最小动态原型，与 DOM/SVG 版本按视觉质量、帧率、包体和维护成本比较。没有原型证据，不写成全站基础设施。
+## Navigation and resilience
 
-## 运行时隔离
+- Native anchors remain the source of navigation and history behavior.
+- useActiveArchiveSection observes only Projects, Logs, Timeline, and Lab in a middle viewport band. No scroll handler continuously mutates state or location. The header is preserved for later reintroduction, not mounted during the current Hero layout pass.
+- Every archive module is a labelled section with scroll-margin-top.
+- EntryGate hides the archive shell before hydration via the root dataset and makes it inert after hydration. The server default remains skipped so no-JavaScript content remains usable.
+- Effect mode storage and media queries are accessed only in guarded browser effects or the small pre-hydration bootstrap.
 
-- 语义内容始终由 DOM 提供，Canvas/WebGL 层默认 `aria-hidden`。
-- 重型场景按路由或可见性懒加载，不能阻塞首屏可读内容。
-- 每个场景有独立错误边界。视觉层报错时显示静态最终帧或直接移除装饰层。
-- 首页首版使用动态场景边界隔离 `KineticTypeField`；场景 chunk、render 或动画生命周期失败时只移除装饰层，身份、导航、索引和入口解锁仍保持可用。
-- 全站只允许一个动画帧调度入口，避免多个库各自运行永久循环。
-- 页面离屏、浏览器隐藏或用户切换到 static 时暂停所有连续渲染。
-- 不同时引入多个承担同一职责的动画库。
+## Future scene rule
 
-## 性能降级
-
-降级不能只依赖设备型号或 user-agent。运行时综合：
-
-- `prefers-reduced-motion`。
-- fine / coarse pointer 和触摸能力。
-- 页面可见性与场景交叉状态。
-- 实际帧耗时和连续长任务。
-- 用户手动选择的特效强度。
-
-当连续一秒无法维持质量目标时，依次降低对象数量、指针响应、后处理、连续背景和渲染分辨率；最后切换到静态最终帧。内容和交互控件不参与降级。
-
-## 内容边界
-
-初期使用本地、版本化内容。是否使用 Markdown、MDX、JSON 或 TypeScript 数据由具体模块决定，解析结果必须进入稳定契约。
-
-建议核心模型：
-
-- `Project`：slug、名称、状态、摘要、技术栈、模块树、证据、链接。
-- `Post`：slug、标题、日期、摘要、标签、正文、草稿状态。
-- `TimelineEntry`：id、开始、结束、类别、标题、摘要、关联项目。
-
-具体内容不能写进动画时间线。场景通过选择器获得当前展示数据。
-
-## 第三方依赖边界
-
-- Framer Motion、Motion、GSAP、Lenis、Three.js、React Three Fiber 等都不是默认必选。
-- 引入依赖时必须写明它唯一负责的职责、替代方案和退出成本。
-- 滚动平滑库不能改变可访问性、锚点定位和浏览器历史行为。
-- 编辑器展示优先使用轻量代码渲染；只有真实编辑需求才引入 Monaco 等重型编辑器。
-
-## 变更规则
-
-- 改项目内容，只改 `content/`。
-- 改当前节点逻辑，只改 feature state。
-- 改页面主秀，只改该 feature 的 `scene/`。
-- 改通用节奏，只改 `motion/`。
-- 替换 Canvas 为 WebGL，只改 renderer 和场景适配，不改路由与内容。
-- 删除特效时，保留完整 DOM 信息与操作路径。
+Future sections may introduce a feature-local scene when it has a clear information purpose. It must define a static final frame, a semantic fallback, visibility and document lifecycle cleanup, and an explicit rationale for any renderer beyond DOM or SVG.

@@ -4,8 +4,6 @@ import type { ReactNode } from "react";
 
 import { siteContent } from "@/content/site";
 import { EffectModeProvider } from "@/effects/runtime/EffectMode";
-import { EffectModeControl } from "@/ui/EffectModeControl";
-import { SiteHeader } from "@/ui/SiteHeader";
 
 import "./globals.css";
 
@@ -28,7 +26,7 @@ const manrope = localFont({
 export const metadata: Metadata = {
   title: {
     default: siteContent.name,
-    template: `%s | ${siteContent.name}`,
+    template: "%s | Scra Atlas",
   },
   description: siteContent.description.text,
 };
@@ -40,19 +38,15 @@ type RootLayoutProps = Readonly<{
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html
-      className={`${leagueGothic.variable} ${manrope.variable}`}
-      data-scroll-behavior="smooth"
-      data-effect-mode="reduced"
+      className={leagueGothic.variable + " " + manrope.variable}
+      data-effect-mode="static"
       data-entry-ritual="skip"
+      data-scroll-behavior="smooth"
       lang="en"
       suppressHydrationWarning
     >
       <body>
-        <EffectModeProvider>
-          <SiteHeader />
-          {children}
-          <EffectModeControl />
-        </EffectModeProvider>
+        <EffectModeProvider>{children}</EffectModeProvider>
       </body>
     </html>
   );

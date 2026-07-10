@@ -13,6 +13,7 @@ type ScrambleTextProps = Readonly<{
   text: string;
   durationMs?: number;
   className?: string;
+  play?: boolean;
 }>;
 
 type VisualText = {
@@ -52,6 +53,7 @@ export function ScrambleText({
   text,
   durationMs = DEFAULT_DURATION_MS,
   className,
+  play = true,
 }: ScrambleTextProps) {
   const { mode } = useEffectMode();
   const [visualText, setVisualText] = useState<VisualText>({
@@ -61,8 +63,9 @@ export function ScrambleText({
   const attemptedTexts = useRef(new Set<string>());
 
   useEffect(() => {
-    if (mode !== "full" || attemptedTexts.current.has(text)) {
-      // A canceled attempt must settle on its final frame without replaying.
+    const shouldAnimate = mode === "full" && play;
+
+    if (!shouldAnimate || attemptedTexts.current.has(text)) {
       setVisualText((current) =>
         current.source === text && current.value === text
           ? current
@@ -103,7 +106,7 @@ export function ScrambleText({
     return () => {
       window.cancelAnimationFrame(animationFrame);
     };
-  }, [durationMs, mode, text]);
+  }, [durationMs, mode, play, text]);
 
   const currentVisualText =
     mode === "full" && visualText.source === text ? visualText.value : text;

@@ -9,26 +9,22 @@ import {
 } from "react";
 
 import { ENTRY_SESSION_KEY } from "@/core/entry";
-import { useEffectMode } from "@/effects/runtime/EffectMode";
 
 const FULL_RITUAL_DURATION_MS = 1200;
-const REDUCED_RITUAL_DURATION_MS = 280;
 
 type EntryGateProps = Readonly<{
-  focusTargetRef: RefObject<HTMLElement | null>;
+  focusTargetRef: RefObject<HTMLAnchorElement | null>;
   onEnter: () => void;
 }>;
 
 type EntryState = "active" | "complete";
 
 export function EntryGate({ focusTargetRef, onEnter }: EntryGateProps) {
-  const { mode } = useEffectMode();
   const [entryState, setEntryState] = useState<EntryState>("active");
   const completedRef = useRef(false);
   const completionTimerRef = useRef<number | null>(null);
   const focusFrameRef = useRef<number | null>(null);
   const gateRef = useRef<HTMLElement>(null);
-  const ritualStartedAtRef = useRef<number | null>(null);
 
   const clearCompletionTimer = useCallback(() => {
     if (completionTimerRef.current === null) {
@@ -55,7 +51,7 @@ export function EntryGate({ focusTargetRef, onEnter }: EntryGateProps) {
     try {
       window.sessionStorage.setItem(ENTRY_SESSION_KEY, "true");
     } catch {
-      // The ritual may still complete when session storage is unavailable.
+      // Completion remains valid in memory when session storage is unavailable.
     }
 
     setEntryState("complete");
@@ -76,26 +72,16 @@ export function EntryGate({ focusTargetRef, onEnter }: EntryGateProps) {
 
     if (document.documentElement.dataset.entryRitual !== "show") {
       completionTimerRef.current = window.setTimeout(completeEntry, 0);
-
       return clearCompletionTimer;
     }
 
-    const now = Date.now();
-    ritualStartedAtRef.current ??= now;
-    const targetDuration =
-      mode === "full"
-        ? FULL_RITUAL_DURATION_MS
-        : REDUCED_RITUAL_DURATION_MS;
-    const elapsed = now - ritualStartedAtRef.current;
-    const remainingDuration = Math.max(0, targetDuration - elapsed);
-    clearCompletionTimer();
     completionTimerRef.current = window.setTimeout(
       completeEntry,
-      remainingDuration,
+      FULL_RITUAL_DURATION_MS,
     );
 
     return clearCompletionTimer;
-  }, [clearCompletionTimer, completeEntry, mode]);
+  }, [clearCompletionTimer, completeEntry]);
 
   useEffect(
     () => () => {
@@ -115,11 +101,12 @@ export function EntryGate({ focusTargetRef, onEnter }: EntryGateProps) {
   return (
     <section
       aria-label="Archive entry"
+      aria-modal="true"
       className="entry-gate"
-      data-mode={mode}
       ref={gateRef}
+      role="dialog"
     >
-      <div className="entry-gate__trace" aria-hidden="true" />
+      <div aria-hidden="true" className="entry-gate__trace" />
       <div className="entry-gate__content">
         <p className="entry-gate__status">ARCHIVE READY</p>
         <p className="entry-gate__title">SCRA ATLAS</p>

@@ -6,52 +6,68 @@ updated: 2026-07-10
 
 ## Overview
 
-Scra Atlas 是一个特效主导的个人技术档案，不是卡片式作品集，也不是黑客终端或宇宙主题。视觉由开放的骨白信息面、非对称切入的近黑动态文字场和少量陶土橙信号构成。层级主要依靠尺度、密度、留白、裁切、细线与字体对比建立；普通文字区域不加框。
+Scra Atlas is a continuous technical archive, not a collection of separate destination pages. The root route reads in one vertical sequence: Hero and Index, then Projects, Logs, Timeline, and Lab. Native fragment navigation remains available in the codebase, but the Header is intentionally not rendered during the current Hero-composition pass; its final placement will follow visual review.
 
-首页是当前设计北星：桌面端保持“左侧身份信息、右侧动态文字场、底部当前索引”的单视口构图；移动端先呈现身份，再立即进入文字场，最后读取项目索引。每个未来页面只允许一个主秀场景，其余动效应退到辅助层。
+The visual direction restores the earlier Scra Atlas Hero: a wide bone information field, an oversized single-line title, and a near-black word field that enters off-canvas from the top-right and reaches the browser's right edge. Its visible left edge is a broad curve, not a standalone ball, clipped card, first-viewport rectangle, or joined curve with a visible bend. The Hero, scene, stage, and Current Index overlay share one dynamic desktop viewport-height frame; Index does not add a second flow height. One container-derived circular-arc model owns the dark fill, clipping edge, and Canvas orbit scene; its endpoints and normalized curvature determine its radius, preventing separate surface and orbit coordinates from drifting apart on wide or tall displays. Current Index sits along the lower bone edge before the archive sections. Later archive surfaces alternate dark and light to make progression legible without turning the page into cards or dashboards.
+
+User-provided screenshots informed hierarchy, movement language, and composition only. They are not source assets or a specification to copy. Scra Atlas keeps its own content, palette, typography, and interaction system.
 
 ## Colors
 
-| Token | sRGB | 用途 |
+| Token | sRGB | Purpose |
 | --- | --- | --- |
-| `--color-bone` | `#F7F1E9` | 页面主背景与暗场中的主要文字 |
-| `--color-void` | `#030202` | 主视觉暗场与入口仪式 |
-| `--color-ink` | `#0E0A08` | 骨白底上的主要文字 |
-| `--color-signal` | `#E6653C` | 活动路径、定位点、下划线和状态信号 |
-| `--color-focus` | `#C74007` | 键盘焦点与需要更高对比度的交互状态 |
-| `--color-muted-text` | `#726A65` | 次级说明和 metadata |
-| `--color-silver` | `#9A948F` | 暗场装饰性密度文字，不用于关键内容 |
-| `--color-line` | `#342F2C` | 暗场细线和低强度结构痕迹 |
+| --color-bone | #F7F1E9 | Light archive surface and dark-scene primary text |
+| --color-void | #030202 | Hero, dark modules, and entry gate |
+| --color-ink | #0E0A08 | Light-surface reader-facing text |
+| --color-signal | #E6653C | Focus signal, cursor, and restrained interaction accent |
+| --color-focus | #C74007 | Keyboard focus and high-contrast interaction states |
+| --color-muted-text | #726A65 | Readable secondary copy and metadata |
+| --color-silver | #9A948F | Subtle nonsemantic scene tone |
+| --color-line | #342F2C | Low-intensity dark scene structure |
 
-陶土橙是信号，不是大面积品牌底色。禁止新增绿色终端色、蓝紫霓虹、彩虹渐变或发光描边。银灰只用于装饰；需要阅读或操作的内容必须使用满足对比度的 `ink`、`bone`、`muted-text` 或 `focus`。
+Terracotta is a signal, not a large background. Do not introduce green-terminal, blue-purple neon, rainbow gradients, or glow treatment. Decorative silver never carries required information.
 
 ## Typography
 
-展示字体为本地 `League Gothic`，用于大标题、模块名称和高密度海报式文字；正文字体为本地 `Manrope`；系统状态、路径、日期和 metadata 使用系统等宽字体栈。字体文件与 OFL 许可保存在 `src/assets/fonts/`。
+Local League Gothic is the display role for Hero and module headings. Local Manrope is the body role. The system mono stack is reserved for short status, paths, dates, and metadata. Chinese text uses native CJK fallbacks from the body stack.
 
-大标题使用窄体、高对比尺度和紧凑行高；正文保持自然句读和舒适行长；等宽字体只承担结构信息，不能铺满所有正文。中文不使用 scramble，不人为增加字距。全站最多保持展示、正文、等宽三种角色。
+Module display headings stay compact and readable. The Hero lockup may scale much larger when its bone information field retains adequate room; its actual size remains responsive to the viewport. English and numeric copy may use the one-time decoding visual. Chinese never becomes random glyphs; it uses a matching clip or mask reveal. Body text keeps natural punctuation and a comfortable line length.
 
-## Elevation
+## Structure and components
 
-页面没有传统卡片阴影层级。空间关系由前后景裁切、黑白反转、文本密度与 z-index 建立：内容层位于骨白平面，动态 SVG 位于场景层，导航和动效强度控制位于交互层，入口仪式是唯一全屏覆盖层。
+- SiteHeader: a preserved native-fragment navigation component with aria-current="location" for the observed archive section. It is temporarily unmounted while its final location is decided.
+- HomeExperience: composition only. It places Hero, four archive features, EntryGate, and the effect control without owning their rendering logic.
+- HomeHero: the bone information stage, title, signature, status, CTA, right off-canvas curved scene boundary, and Current Index transition.
+- CurrentIndex: a semantic ordered list at the Hero boundary, not a card grid.
+- ProjectsSection, LogsSection, TimelineSection, LabSection: feature-local semantic sections driven by src/content/archive.ts.
+- CopyReveal: the shared once-only reader-copy effect. It waits until the EntryGate has exposed archive content and the specific text reaches the viewport.
+- ScrambleText: an accessible visual decode layer for Latin letters and numerals.
+- TypewriterText: an accessible Hero signature loop with a stable screen-reader equivalent.
+- KineticTypeField: an aria-hidden Canvas 2D scene of readable, broad inward offsets from the Hero boundary arc, repeated slow-moving technical text tracks, and a bounded desktop pointer dot-substitution field. It contains no fake terminal data, route, node graphics, floating scene words, or visible dotted guide rings.
+- EntryGate: a skippable first-session cover. Archive content is hidden and inert while the cover is active after hydration; no-JavaScript rendering skips the cover.
+- EffectModeControl: a compact persisted FULL / STATIC control.
 
-禁止玻璃拟态、宽泛阴影、浮动圆角卡片和多层半透明面板。真正需要边界的控件可以使用一条细线、焦点轮廓或紧凑实色底；普通标题、正文和状态数据保持开放排版。
+Content belongs in src/content, page features own semantic structure, shared entry effects live in src/effects/primitives, and continuous Hero lifecycle logic lives in src/effects/runtime.
 
-## Components
+## Motion and resilience
 
-- `SiteHeader`：开放式身份与主导航；活动状态使用短陶土橙定位线，不使用胶囊标签。
-- `EntryGate`：首次会话的可跳过入口仪式；回访、静态模式和无 JavaScript 情况不阻断内容。
-- `HomeExperience`：首页信息、当前索引和主秀场景的组合层，不承载底层动画实现。
-- `KineticTypeField`：`aria-hidden` 的 SVG 动态文字场；静止帧也必须成立，手机端位于身份与索引之间。异步场景外层始终保留同尺寸槽位，加载延迟或失败不能推动正文布局。
-- `ScrambleText`：仅在 `full` 模式下对短拉丁文本单次解码；测量层防止宽度抖动，可访问文本始终稳定。
-- `CurrentIndex`：用编号、细线、排版尺度和 metadata 形成开放式索引，不转换成项目卡片。
-- `EffectModeControl`：提供 `FULL / REDUCED / STATIC` 三档，尊重系统减少动画偏好并持久化用户选择。
-- `ModuleReserved`：未开发路由的诚实占位，只说明模块职责和下一步，不伪造已完成内容。
+Two Hero systems provide all persistent motion in FULL:
 
-共享组件只表达稳定契约；页面专属主秀保留在对应 feature 中。内容数据放在 `src/content/`，效果模式与生命周期放在 `src/effects/runtime/`，通用视觉动作放在 `src/effects/primitives/`。
+1. The Hero signature types, holds, deletes, pauses, and repeats.
+2. The Hero Canvas text tracks move slowly along arcs that share the left boundary's centre and curvature at different inward offsets. Adjacent bands rotate in opposite directions, with 38 distinct periods interpolated across a 360-second outer to 160-second inner envelope. One renderer draws all 38 rings over one exact circular turn before applying the Scra Atlas half-circle clip, so the visible region stays filled without an oversized SVG payload or a duplicate glyph at the circular seam. The final in-turn space cycles a complete short technical connector, `AI`, `PHY`, or `JAVA`, before the track returns to its first glyph. Thirteen of thirty-eight bands use deterministic pseudo-random breathing gaps that are three times the former length and traced by a low-alpha `·` at every gap cell, while normal word spacing and the other twenty-five tracks stay dot-free and continuously populated. A bounded desktop pointer circle replaces letters and numbers within its radius with medium-alpha `·` at the same positions; existing connector dots remain visible. Track letter spacing is widened. All tracks use the same responsive font, capped from two adjacent rings' actual radial step and never below 7px; this keeps the field dense without creating extra in-turn glyphs. Canvas backing-store size, black-surface curve, clipping boundary, path centre, and radii derive from one rendered scene model through ResizeObserver, rather than a fixed artboard, CSS mask, or a scroll loop. Stable bounds cache one base-font glyph metric per character. FULL sets one Canvas font per frame, caches each glyph's local sine/cosine, and skips whitespace, off-viewport anchors, and anchors outside the same measured black circular surface before drawing. The Canvas clip remains the final edge guard. It uses direct per-glyph transforms and caps its backing store at 1.5 device pixels per CSS pixel. STATIC retains a 2x cap because it does not animate.
 
-## Do's and Don'ts
+STATIC shows final text and a final scene frame immediately. System reduced motion starts in STATIC, while a persisted manual FULL preference remains valid. The Hero scene pauses when off screen or when the document is hidden. A rendering failure leaves a non-empty static fallback.
 
-Do：先做成立的静态构图，再添加有状态含义的动画；用骨白、近黑和陶土橙保持 Claude Code 式克制；让桌面与手机拥有各自构图；把指针、路径、字符变化限制在一个注意力中心；确保关闭效果后内容、导航和焦点仍完整。
+All reader-facing text appears in its final readable form in static rendering. One-time reveals do not replay while scrolling, and their measurement and visual layers inherit the host text's whitespace behavior so decoding cannot make a title or row reflow. Decorative Canvas words are aria-hidden and excluded from copy reveal. No generic reduced-motion CSS rule cancels an explicit FULL preference.
 
-Don't：不要恢复星球、星云、黑洞、虫洞或 shader 主视觉；不要用绿色模拟终端；不要给每段文字套框；不要堆叠圆角卡片、玻璃面板、霓虹发光、假状态码和持续乱码；不要因为某个库“高级”就把 Canvas、WebGL、GSAP 或 Three.js 变成全站前提；不要复制参考站的文案、品牌或具体布局。
+## Elevation and interaction
+
+The site does not use traditional card shadows. Hierarchy comes from surface changes, typographic scale, layout rhythm, thin rules, open space, and the Hero scene layer. Header, scene, and EntryGate follow the semantic layer tokens rather than arbitrary z-index values.
+
+Use native anchor behavior, semantic sections, visible focus, and touch-sized controls. There is no scroll snap, Lenis, scroll hijacking, duplicate menu, or hidden hover-only information. A top navigation band is intentionally deferred rather than improvised over the Hero scene.
+
+## Do and do not
+
+Do: establish a static composition first, use bone, void, and terracotta with restraint, preserve native browser navigation, and isolate continuous scene work from content.
+
+Do not: restore planets, nebulae, black holes, shaders, fake terminal status codes, persistent random text, glowing neon, repeated rounded cards, glass panels, or another site's copy, brand, source code, or layout.
