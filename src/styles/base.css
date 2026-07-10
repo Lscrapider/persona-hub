@@ -1,0 +1,101 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 20rem;
+  min-height: 100%;
+  background: var(--color-bone);
+  color: var(--color-ink);
+  color-scheme: light;
+  font-family: var(--font-body);
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+html[data-effect-mode="reduced"],
+html[data-effect-mode="static"] {
+  scroll-behavior: auto;
+}
+
+body {
+  min-height: 100dvh;
+  margin: 0;
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  background: var(--color-bone);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  line-height: 1.6;
+}
+
+::selection {
+  background: var(--color-signal);
+  color: var(--color-void);
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: var(--line-hairline);
+  text-underline-offset: 0.2em;
+}
+
+button,
+input,
+select,
+textarea,
+summary {
+  color: inherit;
+  font: inherit;
+}
+
+:where(button, input, select, textarea, summary, [role="button"]) {
+  min-block-size: var(--size-touch);
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 4px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block-start: 0;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  max-inline-size: 70ch;
+  text-wrap: pretty;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

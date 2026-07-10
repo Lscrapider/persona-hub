@@ -1,0 +1,41 @@
+:root {
+  --color-void: oklch(0.09 0.006 45);
+  --color-bone: oklch(0.96 0.012 75);
+  --color-ink: oklch(0.15 0.008 55);
+  --color-signal: oklch(0.66 0.17 38);
+  --color-focus: oklch(0.56 0.18 38);
+  --color-muted-text: oklch(0.53 0.012 55);
+  --color-silver: oklch(0.67 0.01 65); /* Decorative use only. */
+  --color-line: oklch(0.31 0.01 55);
+
+  --font-display: var(--font-league-gothic), "Arial Narrow", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-body: var(--font-manrope), "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: clamp(2.5rem, 5vw, 5rem);
+  --space-page-inline: clamp(1rem, 4vw, 4.5rem);
+  --space-page-block: clamp(1rem, 2.5vw, 2.5rem);
+
+  --size-touch: 2.75rem;
+  --line-hairline: 1px;
+
+  --duration-instant: 120ms;
+  --duration-fast: 220ms;
+  --duration-base: 380ms;
+  --duration-scene: 720ms;
+  --duration-ritual: 1200ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --layer-base: 0;
+  --layer-scene: 10;
+  --layer-header: 20;
+  --layer-overlay: 30;
+}

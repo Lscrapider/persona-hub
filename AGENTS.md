@@ -13,6 +13,11 @@
 - Organize documentation by function, for example `docs/design/`, `docs/architecture/`, `docs/credits/`, and `docs/plans/`.
 - Documentation should explain current decisions without freezing future visual or technical direction.
 
+## Agent Workflow
+
+- For a new feature, visual direction, or structural refactor, use the relevant available `superpowers` workflow before implementation. This includes design exploration before creative work, a written implementation plan after the design is approved, and evidence-based verification before declaring the work complete.
+- `superpowers` workflow guidance supplements these project rules. It never authorizes a commit, push, branch creation, or unit-test creation that the user has not explicitly approved.
+
 ## Git
 
 - Do not commit, push, or create branches unless the user explicitly agrees.
