@@ -15,6 +15,7 @@
 
 ## Agent Workflow
 
+- Use subagents only when work is both independent and genuinely parallelizable without shared state. Do not split sequential or dependency-bound implementation steps merely to use multiple agents; the primary agent handles those steps linearly, including integration, review, and final verification.
 - For a new feature, visual direction, or structural refactor, use the relevant available `superpowers` workflow before implementation. This includes design exploration before creative work, a written implementation plan after the design is approved, and evidence-based verification before declaring the work complete.
 - `superpowers` workflow guidance supplements these project rules. It never authorizes a commit, push, branch creation, or unit-test creation that the user has not explicitly approved.
 
