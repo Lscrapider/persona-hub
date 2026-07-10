@@ -1,21 +1,20 @@
 # Documentation
 
-Project documentation is organized by function so each area can grow without mixing planning, design, and implementation notes.
+Project documentation is organized by function so design direction, implementation architecture, provenance, and future plans do not conflict with each other.
 
 ## Sections
 
-- `design/`: product direction, interaction design, visual references, and UX specifications.
-- `architecture/`: implementation architecture and module boundaries.
+- `design/`: current product direction, visual constraints, interaction model, and implementation approach.
+- `architecture/`: reserved for implementation-specific architecture notes that are not already covered by the current design document.
 - `credits/`: external asset sources, licenses, attribution rules, and usage constraints.
-- `plans/`: implementation plans and task breakdowns.
+- `plans/`: reserved for active implementation plans.
 
 ## Current Documents
 
-- `architecture/2026-07-08-technology-selection.md`: current Vite, React, shader-led scroll narrative architecture.
-- `credits/asset-sources.md`: current visual source policy and provenance rules.
-- `design/2026-07-08-interactive-cosmic-layering.md`: current shader-led cosmic browsing direction.
-- `../public/assets/ASSET_MANIFEST.md`: concrete asset provenance for committed visuals.
+- `design/2026-07-10-cinematic-nebula-scene.md`: current cinematic Three.js cosmic-entity scene direction and implementation scheme.
+- `credits/asset-sources.md`: visual source policy and provenance rules.
+- `../public/assets/ASSET_MANIFEST.md`: concrete asset provenance for committed visuals and archived generated assets.
 
-## Superseded Documents
+## Superseded Direction
 
-Older raster-first or fixed-asset visual direction has been superseded by the shader-led cosmic browsing direction.
+Older raster-led, DOM-led, observatory-interface, map-like, coordinate-readout, panel-style, and ordinary-nebula-card directions have been removed. The current direction is a Three.js scene where projects are independent cosmic entities and the universe itself is the interface.

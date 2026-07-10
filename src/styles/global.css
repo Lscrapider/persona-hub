@@ -1,16 +1,15 @@
 :root {
   color-scheme: dark;
-  --bg: oklch(0.075 0.024 254);
-  --bg-deep: oklch(0.045 0.018 257);
-  --ink: oklch(0.94 0.012 232);
+  --bg: oklch(0.055 0.018 262);
+  --bg-deep: oklch(0.025 0.014 268);
+  --ink: oklch(0.95 0.012 232);
   --ink-soft: oklch(0.78 0.024 228);
   --ink-muted: oklch(0.62 0.035 222);
-  --line: oklch(0.72 0.06 205 / 0.32);
-  --line-quiet: oklch(0.55 0.045 220 / 0.18);
   --cyan: oklch(0.82 0.105 206);
   --green: oklch(0.8 0.12 165);
   --amber: oklch(0.79 0.13 62);
-  --red: oklch(0.72 0.18 28);
+  --rose: oklch(0.76 0.14 18);
+  --violet: oklch(0.74 0.12 286);
   --font-display:
     "DIN Condensed", "Avenir Next Condensed", "Bahnschrift", "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
   --font-sans:
@@ -32,6 +31,7 @@
 html {
   min-width: 320px;
   background: var(--bg-deep);
+  scrollbar-width: none;
   scroll-behavior: auto;
 }
 
@@ -43,12 +43,18 @@ body {
   background: var(--bg-deep);
 }
 
+body::-webkit-scrollbar {
+  display: none;
+}
+
 button,
 a {
   font: inherit;
 }
 
 button {
+  border: 0;
+  background: transparent;
   color: inherit;
 }
 
@@ -79,23 +85,18 @@ a:focus-visible {
   border: 0;
 }
 
-.system-label,
-.signal-status,
 .config-warning {
   font-family: var(--font-mono);
   font-size: clamp(0.72rem, 1vw, 0.82rem);
   line-height: 1.35;
 }
 
-.system-label {
-  font-family: var(--font-mono);
-  color: var(--amber);
-}
-
 .atlas-shell {
   min-height: 760vh;
   position: relative;
-  background: var(--bg-deep);
+  background:
+    radial-gradient(circle at 50% 44%, oklch(0.08 0.035 270 / 0.22), transparent 34rem),
+    var(--bg-deep);
 }
 
 .signal-atlas {
@@ -108,62 +109,76 @@ a:focus-visible {
   --py: calc(var(--pointer-y) * 1rem);
 }
 
-.deep-field {
-  position: absolute;
-  inset: -4vh -4vw;
-  z-index: 0;
-  overflow: hidden;
-  background: var(--bg-deep);
-}
-
+.deep-field,
+.cosmic-three-root,
+.three-cosmic-scene,
 .field-plate {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  user-select: none;
-  pointer-events: none;
 }
 
-.field-shader-cosmos {
-  position: absolute;
-  inset: 0;
+.deep-field {
+  z-index: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 42% 30%, oklch(0.16 0.055 286 / 0.08), transparent 30rem),
+    radial-gradient(circle at 74% 68%, oklch(0.12 0.045 178 / 0.08), transparent 28rem),
+    var(--bg-deep);
+}
+
+.cosmic-three-root {
   z-index: 1;
-  display: block;
-  width: 100%;
-  height: 100%;
+  overflow: hidden;
   pointer-events: none;
-  user-select: none;
-  filter: saturate(calc(1.04 + var(--project-presence) * 0.12)) contrast(1.18) brightness(calc(1.28 + var(--project-presence) * 0.1 + var(--tunnel-intensity) * 0.18));
-  transform:
-    translate3d(calc(var(--px) * -0.32), calc(var(--py) * 0.22), 0)
-    scale(var(--field-scale));
-  transform-origin: 54% 48%;
 }
 
-.field-transit-stars {
+.cosmic-three-root[data-webgl="unavailable"]::before,
+.cosmic-three-root[data-webgl="unavailable"]::after {
+  content: "";
   position: absolute;
-  inset: 0;
-  z-index: 2;
+  inset: -12%;
+  pointer-events: none;
+}
+
+.cosmic-three-root[data-webgl="unavailable"]::before {
+  background:
+    radial-gradient(circle at 31% 28%, oklch(0.74 0.1 190 / 0.16), transparent 2px),
+    radial-gradient(circle at 68% 36%, oklch(0.86 0.04 220 / 0.22), transparent 1.5px),
+    radial-gradient(circle at 46% 74%, oklch(0.7 0.09 165 / 0.16), transparent 2px),
+    radial-gradient(circle at 18% 72%, oklch(0.8 0.06 215 / 0.13), transparent 1.2px),
+    radial-gradient(circle at 83% 64%, oklch(0.82 0.08 210 / 0.15), transparent 1.8px);
+  background-size: 19rem 17rem, 23rem 21rem, 29rem 31rem, 17rem 23rem, 31rem 27rem;
+  opacity: 0.82;
+}
+
+.cosmic-three-root[data-webgl="unavailable"]::after {
+  background:
+    radial-gradient(ellipse at 47% 42%, oklch(0.45 0.08 182 / 0.18), transparent 18rem),
+    radial-gradient(ellipse at 62% 58%, oklch(0.32 0.07 286 / 0.14), transparent 22rem),
+    radial-gradient(ellipse at 28% 63%, oklch(0.34 0.06 205 / 0.12), transparent 20rem);
+  filter: blur(0.28rem);
+  opacity: 0.68;
+}
+
+.three-cosmic-scene {
   display: block;
   width: 100%;
   height: 100%;
-  opacity: calc(var(--transit-opacity) * 0.96);
   pointer-events: none;
   user-select: none;
-  mix-blend-mode: screen;
-  transform:
-    translate3d(calc(var(--px) * -0.08), calc(var(--py) * 0.06), 0)
-    scale(calc(1 + var(--tunnel-intensity) * 0.06));
+}
+
+.field-plate {
+  z-index: 2;
+  pointer-events: none;
+  user-select: none;
 }
 
 .field-plate--shadow {
-  z-index: 3;
   background:
-    radial-gradient(circle at 58% 47%, transparent 0 34%, oklch(0.02 0.014 254 / 0.04) 62%, oklch(0.02 0.014 254 / 0.5) 100%),
-    radial-gradient(circle at 18% 76%, oklch(0.015 0.012 254 / 0.32), transparent 27rem),
-    linear-gradient(90deg, oklch(0.018 0.012 254 / 0.28), transparent 48%, oklch(0.018 0.012 254 / 0.2)),
-    linear-gradient(180deg, oklch(0.02 0.014 254 / 0.08), transparent 34%, oklch(0.012 0.01 254 / 0.22));
+    radial-gradient(circle at 54% 48%, transparent 0 38%, oklch(0.018 0.012 266 / 0.26) 78%, oklch(0.012 0.01 266 / 0.7) 100%),
+    radial-gradient(circle at 20% 82%, oklch(0.015 0.012 254 / 0.36), transparent 26rem),
+    linear-gradient(180deg, oklch(0.008 0.006 266 / 0.32), transparent 28%, transparent 70%, oklch(0.008 0.006 266 / 0.4));
 }
 
 .atlas-topline {
@@ -171,11 +186,11 @@ a:focus-visible {
   z-index: 8;
   inset-inline: clamp(1rem, 3vw, 2.4rem);
   top: clamp(0.9rem, 2.4vw, 1.7rem);
-  display: grid;
-  grid-template-columns: max-content 1fr max-content;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: clamp(0.8rem, 3vw, 2rem);
-  color: var(--ink-soft);
+  color: oklch(0.82 0.024 228 / 0.78);
   pointer-events: none;
 }
 
@@ -185,59 +200,39 @@ a:focus-visible {
 
 .atlas-mark,
 .atlas-github {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.52rem;
-  font-family: var(--font-sans);
   font-size: 0.86rem;
-  font-weight: 560;
+  line-height: 1;
+  text-shadow: 0 0 1.6rem oklch(0.8 0.12 206 / 0.22);
+  transition:
+    color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .atlas-mark {
   color: var(--ink);
+  font-weight: 620;
 }
 
 .atlas-github {
-  justify-self: end;
   color: var(--ink-soft);
 }
 
-.atlas-phase {
-  justify-self: center;
-  display: flex;
-  gap: clamp(0.8rem, 2.4vw, 1.6rem);
-  color: oklch(0.78 0.024 228 / 0.5);
-  font-family: var(--font-mono);
-  font-size: clamp(0.66rem, 0.9vw, 0.78rem);
+.atlas-mark:hover,
+.atlas-github:hover {
+  color: var(--green);
 }
 
-.tunnel-readout {
-  position: fixed;
-  z-index: 7;
-  left: 50%;
-  top: 50%;
-  display: grid;
-  gap: 0.25rem;
-  min-width: min(22rem, calc(100vw - 2rem));
-  color: oklch(0.86 0.04 210 / 0.78);
-  font-family: var(--font-mono);
-  pointer-events: none;
-  text-align: center;
-  text-transform: none;
-  transform: translate(-50%, -50%) scale(calc(0.92 + var(--tunnel-intensity) * 0.12));
+.cosmic-label,
+.signal-status,
+.atlas-traverse-panel__meta {
+  color: oklch(0.84 0.028 220 / 0.64);
+  font-size: clamp(0.78rem, 1vw, 0.92rem);
+  line-height: 1.35;
+  text-shadow: 0 0 1.8rem oklch(0.75 0.1 206 / 0.2);
 }
 
-.tunnel-readout span {
-  color: oklch(0.82 0.105 206 / 0.68);
-  font-size: 0.75rem;
-}
-
-.tunnel-readout strong {
-  color: var(--ink);
-  font-size: clamp(1.4rem, 3.6vw, 3.5rem);
-  font-family: var(--font-display);
-  font-weight: 580;
-  letter-spacing: 0;
+.cosmic-label {
+  font-weight: 520;
 }
 
 .story-act {
@@ -262,6 +257,9 @@ a:focus-visible {
   font-weight: 580;
   line-height: 0.98;
   text-wrap: balance;
+  text-shadow:
+    0 0 1.2rem oklch(0.8 0.12 206 / 0.16),
+    0 0 4rem oklch(0.7 0.1 286 / 0.12);
 }
 
 .story-act h1 {
@@ -281,6 +279,7 @@ a:focus-visible {
   font-size: clamp(1rem, 1.55vw, 1.22rem);
   line-height: 1.62;
   text-wrap: pretty;
+  text-shadow: 0 0 1.3rem oklch(0.03 0.018 266 / 0.82);
 }
 
 .atlas-traverse-panel {
@@ -299,18 +298,20 @@ a:focus-visible {
 
 .atlas-traverse,
 .atlas-boundary__action {
-  border: 1px solid oklch(0.72 0.06 205 / 0.32);
-  background: oklch(0.045 0.02 252 / 0.56);
+  width: max-content;
+  min-height: 2.2rem;
+  padding: 0;
   color: var(--green);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 2.35rem;
-  padding: 0.48rem 0.68rem;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: clamp(0.88rem, 1vw, 1rem);
   line-height: 1;
   cursor: pointer;
+  text-shadow:
+    0 0 0.9rem oklch(0.8 0.12 165 / 0.26),
+    0 0 2.6rem oklch(0.8 0.12 165 / 0.14);
+  transition:
+    color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .atlas-traverse:disabled {
@@ -320,48 +321,41 @@ a:focus-visible {
 
 .atlas-traverse:not(:disabled):hover,
 .atlas-boundary__action:hover {
-  border-color: oklch(0.82 0.105 206 / 0.52);
-  background: oklch(0.07 0.03 230 / 0.68);
   color: var(--ink);
-}
-
-.atlas-traverse-panel__meta {
-  color: oklch(0.78 0.024 228 / 0.52);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
+  transform: translateY(-1px);
 }
 
 .atlas-project-page {
   position: fixed;
   z-index: 6;
   inset: clamp(5.5rem, 10vh, 7rem) clamp(1rem, 5vw, 5rem) clamp(2.2rem, 7vh, 4.5rem);
-  display: grid;
-  grid-template-columns: minmax(20rem, 0.86fr) minmax(22rem, 1.08fr);
-  gap: clamp(2rem, 7vw, 7rem);
+  display: flex;
   align-items: center;
+  justify-content: flex-start;
   opacity: var(--scene-opacity);
   transform:
-    translate3d(0, calc((1 - var(--scene-opacity)) * 1.7rem), 0)
+    translate3d(calc((1 - var(--scene-opacity)) * -1rem), calc((1 - var(--scene-opacity)) * 1.7rem), 0)
     scale(calc(0.98 + var(--scene-opacity) * 0.02));
 }
 
 .atlas-project-page--reverse {
-  grid-template-columns: minmax(22rem, 1.08fr) minmax(20rem, 0.86fr);
-}
-
-.atlas-project-page--reverse .project-copy {
-  grid-column: 2;
-}
-
-.atlas-project-page--reverse .project-nebula-window {
-  grid-column: 1;
-  grid-row: 1;
+  justify-content: flex-end;
+  text-align: right;
+  transform:
+    translate3d(calc((1 - var(--scene-opacity)) * 1rem), calc((1 - var(--scene-opacity)) * 1.7rem), 0)
+    scale(calc(0.98 + var(--scene-opacity) * 0.02));
 }
 
 .project-copy {
-  display: grid;
+  display: flex;
+  width: min(43rem, 100%);
+  flex-direction: column;
+  align-items: flex-start;
   gap: clamp(0.8rem, 1.8vw, 1.3rem);
-  max-width: 46rem;
+}
+
+.atlas-project-page--reverse .project-copy {
+  align-items: flex-end;
 }
 
 .project-copy h2 {
@@ -372,84 +366,20 @@ a:focus-visible {
   font-weight: 580;
   line-height: 0.94;
   text-wrap: balance;
+  text-shadow:
+    0 0 1.4rem color-mix(in oklch, var(--accent), transparent 72%),
+    0 0 4.2rem color-mix(in oklch, var(--accent), transparent 82%);
 }
 
 .project-copy__signal {
   color: oklch(0.9 0.026 218);
 }
 
-.project-copy__meta {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
-  max-width: 46rem;
-  margin: 0;
-  padding-block: 0.72rem;
-  border-block: 1px solid var(--line-quiet);
-}
-
-.project-copy__meta div {
-  min-width: 0;
-}
-
-.project-copy__meta dt,
-.project-copy__meta dd {
-  margin: 0;
-}
-
-.project-copy__meta dt {
-  color: var(--ink-muted);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-}
-
-.project-copy__meta dd {
-  margin-top: 0.28rem;
-  color: var(--ink);
-  font-size: clamp(0.9rem, 1.25vw, 1.02rem);
-  overflow-wrap: anywhere;
-}
-
-.project-nebula-window {
-  position: relative;
-  min-height: min(68vh, 46rem);
-  isolation: isolate;
-}
-
-.project-nebula-window::before {
-  display: none;
-}
-
-.project-nebula-window::after {
-  display: none;
-}
-
-.project-nebula-window__scope {
-  position: absolute;
-  right: clamp(2rem, 8vw, 7rem);
-  bottom: clamp(1.8rem, 9vh, 6rem);
-  z-index: 1;
-  display: grid;
-  gap: 0.5rem;
+.project-copy__title {
   color: color-mix(in oklch, var(--accent), white 18%);
-  font-family: var(--font-mono);
-  text-align: right;
-  opacity: 0.7;
-}
-
-.project-nebula-window__scope span {
-  color: oklch(0.88 0.03 220 / 0.58);
-  max-width: 18ch;
-  font-size: 0.68rem;
-  line-height: 1.35;
-}
-
-.project-nebula-window__scope strong {
-  color: color-mix(in oklch, var(--accent), white 18%);
-  font-size: clamp(2.4rem, 6vw, 5rem);
-  font-family: var(--font-display);
-  font-weight: 560;
-  line-height: 0.86;
+  font-size: clamp(0.95rem, 1.4vw, 1.18rem);
+  line-height: 1.4;
+  text-shadow: 0 0 1.5rem color-mix(in oklch, var(--accent), transparent 74%);
 }
 
 .signal-link,
@@ -457,14 +387,23 @@ a:focus-visible {
   width: max-content;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
   color: var(--green);
-  font-family: var(--font-mono);
+  font-size: clamp(0.88rem, 1vw, 1rem);
+  line-height: 1.2;
+  text-shadow:
+    0 0 0.9rem oklch(0.8 0.12 165 / 0.24),
+    0 0 2.6rem oklch(0.8 0.12 165 / 0.12);
 }
 
 .signal-link {
-  padding-block: 0.24rem;
-  border-bottom: 1px solid currentColor;
+  transition:
+    color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.signal-link:hover {
+  color: var(--ink);
+  transform: translateY(-1px);
 }
 
 .signal-status {
@@ -477,21 +416,12 @@ a:focus-visible {
   left: clamp(1.2rem, 6vw, 5rem);
   bottom: clamp(3rem, 10vh, 6.2rem);
   width: min(44rem, calc(100vw - 2.4rem));
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: clamp(0.85rem, 1.8vw, 1.15rem);
   opacity: var(--boundary-opacity);
   transform: translate3d(0, calc((1 - var(--boundary-opacity)) * 1.5rem), 0);
-}
-
-.atlas-boundary::before {
-  content: "";
-  position: absolute;
-  inset: -1.5rem -2rem -1.4rem -1rem;
-  z-index: -1;
-  background:
-    linear-gradient(90deg, oklch(0.03 0.018 252 / 0.72), oklch(0.03 0.018 252 / 0.42), transparent),
-    radial-gradient(circle at 10% 85%, oklch(0.8 0.12 165 / 0.12), transparent 16rem);
-  pointer-events: none;
 }
 
 .atlas-boundary h2 {
@@ -502,6 +432,9 @@ a:focus-visible {
   font-weight: 580;
   line-height: 0.94;
   text-wrap: balance;
+  text-shadow:
+    0 0 1.6rem oklch(0.8 0.12 165 / 0.16),
+    0 0 4rem oklch(0.74 0.12 286 / 0.14);
 }
 
 .atlas-boundary p {
@@ -515,11 +448,10 @@ a:focus-visible {
 .atlas-boundary__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.7rem;
+  gap: 0.9rem 1.2rem;
 }
 
 .atlas-boundary__action {
-  width: max-content;
   text-decoration: none;
 }
 
@@ -541,14 +473,6 @@ a:focus-visible {
     min-height: 820vh;
   }
 
-  .atlas-topline {
-    grid-template-columns: 1fr max-content;
-  }
-
-  .atlas-phase {
-    display: none;
-  }
-
   .story-act--deep {
     bottom: 4.2rem;
   }
@@ -566,32 +490,17 @@ a:focus-visible {
   .atlas-project-page,
   .atlas-project-page--reverse {
     inset: 5.4rem 1rem 2rem;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-    align-content: center;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
   }
 
-  .atlas-project-page--reverse .project-copy,
-  .atlas-project-page--reverse .project-nebula-window {
-    grid-column: auto;
-    grid-row: auto;
+  .atlas-project-page--reverse .project-copy {
+    align-items: flex-start;
   }
 
   .project-copy h2 {
     font-size: clamp(2.8rem, 17vw, 5rem);
-  }
-
-  .project-copy__meta {
-    grid-template-columns: 1fr;
-  }
-
-  .project-nebula-window {
-    min-height: clamp(16rem, 38vh, 24rem);
-  }
-
-  .project-nebula-window__scope {
-    right: 1rem;
-    bottom: 1rem;
   }
 
   .atlas-boundary {
@@ -601,14 +510,9 @@ a:focus-visible {
     width: auto;
   }
 
-  .atlas-boundary::before {
-    inset: -1rem;
-  }
-
   .atlas-boundary h2 {
     font-size: clamp(2.4rem, 15vw, 4.2rem);
   }
-
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -621,12 +525,9 @@ a:focus-visible {
     transition-duration: 1ms !important;
   }
 
-  .field-shader-cosmos,
-  .field-transit-stars,
   .atlas-project-page,
   .atlas-traverse-panel,
-  .atlas-boundary,
-  .tunnel-readout {
+  .atlas-boundary {
     transform: none;
   }
 }

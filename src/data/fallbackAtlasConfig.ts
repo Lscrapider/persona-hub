@@ -3,7 +3,7 @@ import type { AtlasConfig } from '../config/atlas.schema';
 export const fallbackAtlasConfig: AtlasConfig = {
   identity: {
     name: 'Scra Atlas',
-    description: 'Deep field observatory for project signals, experiments, and quiet future coordinates.',
+    description: 'Deep-space field for project-scale cosmic phenomena, experiments, and regions still forming.',
     github: 'https://github.com/Lscrapider'
   },
   experience: {
@@ -45,11 +45,11 @@ export const fallbackAtlasConfig: AtlasConfig = {
     },
     {
       codename: 'FUTURE SIGNAL',
-      title: '期待未来坐标',
-      summary: '等待新的信号进入星图中。',
+      title: '未来异常区域',
+      summary: '等待新的项目在深空中聚成可观测的异常区域。',
       url: null,
-      signalType: 'Reserved Nebula',
-      signalDescription: 'A future coordinate held open inside the atlas.',
+      signalType: 'Uncatalogued Phenomenon',
+      signalDescription: 'A deep-space anomaly held open for a future project.',
       signalAsset: '/assets/generated/dark-node-loop.webp',
       signalStillAsset: '/assets/generated/dark-node-still.png',
       registryLabel: 'Future project placeholder',

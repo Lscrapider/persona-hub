@@ -27,4 +27,4 @@ Scra Atlas may use:
 
 ## Current Status
 
-The active homepage uses `src/features/signal/CosmicShaderBackground.tsx` as the primary visual background. Runtime raster assets documented in `public/assets/ASSET_MANIFEST.md` remain in `public/assets/`; archived source and reference images live under `docs/credits/assets/` so they do not inflate the production build.
+The active homepage uses `src/features/signal/CosmicThreeScene.tsx` as the primary visual system. Current project visuals are rendered through Three.js scene objects and original GLSL shaders. Runtime raster assets documented in `public/assets/ASSET_MANIFEST.md` remain in `public/assets/` for provenance, fallback experiments, or config compatibility; archived source and reference images live under `docs/credits/assets/` so they do not inflate the production build.
