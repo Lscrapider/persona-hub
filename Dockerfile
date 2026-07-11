@@ -38,4 +38,4 @@ COPY --from=builder /app/.next ./.next
 
 EXPOSE 5778
 
-CMD ["pnpm", "start", "--", "-p", "5778"]
+CMD ["./node_modules/.bin/next", "start", "-p", "5778"]
