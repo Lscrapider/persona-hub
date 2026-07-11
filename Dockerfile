@@ -4,9 +4,7 @@ ENV CI=true
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ENV COREPACK_NPM_REGISTRY=https://registry.npmmirror.com
 
-RUN corepack enable \
-  && corepack prepare pnpm@11.5.2 --activate \
-  && printf 'registry=https://registry.npmmirror.com/\n' > /root/.npmrc
+RUN corepack enable && corepack prepare pnpm@11.5.2 --activate
 
 FROM base AS dependencies
 
