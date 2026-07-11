@@ -1,4 +1,4 @@
-FROM node:22.23.1-bookworm-slim AS base
+FROM node:22-bookworm-slim AS base
 
 ENV CI=true
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
