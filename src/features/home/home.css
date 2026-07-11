@@ -34,6 +34,12 @@
   }
 }
 
+@media (min-width: 48.0625rem) and (max-height: 51.99rem) {
+  .home-hero {
+    --hero-viewport-height: 52rem;
+  }
+}
+
 .home-hero__content {
   position: relative;
   z-index: 2;
@@ -212,9 +218,10 @@
 .current-index__link {
   display: grid;
   min-block-size: 3.25rem;
-  grid-template-columns: 2.5rem 4rem minmax(0, 1fr) max-content;
+  grid-template-columns: 2.5rem 4rem minmax(0, 1fr);
   align-items: center;
-  gap: var(--space-xs);
+  column-gap: var(--space-xs);
+  row-gap: 0.18rem;
   padding-block: var(--space-xs);
   text-decoration: none;
 }
@@ -229,6 +236,7 @@
 }
 
 .current-index__locator {
+  grid-row: span 2;
   inline-size: 3rem;
   block-size: var(--line-hairline);
   background: var(--color-signal);
@@ -242,19 +250,49 @@
 }
 
 .current-index__title {
-  overflow: hidden;
+  min-inline-size: 0;
   font-family: var(--font-display);
   font-size: clamp(1.25rem, 1.8vw, 1.7rem);
   letter-spacing: 0.01em;
-  line-height: 0.84;
-  text-overflow: ellipsis;
+  line-height: 0.94;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
   text-transform: uppercase;
-  white-space: nowrap;
+}
+
+.current-index__title[data-cjk-heading] {
+  font-family: var(--font-cjk-heading);
+  font-size: clamp(1.1rem, 1.5vw, 1.5rem);
+  font-synthesis: none;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  text-transform: none;
 }
 
 .current-index__meta {
+  grid-column: 3;
   color: var(--color-muted-text);
-  text-align: end;
+  max-inline-size: 64ch;
+  text-align: start;
+  text-transform: none;
+}
+
+.current-index__number {
+  grid-row: span 2;
+}
+
+.current-index__title-copy,
+.current-index__title-copy .scramble-text,
+.current-index__summary-copy,
+.current-index__summary-copy .scramble-text {
+  display: block;
+  white-space: normal;
+}
+
+.current-index__summary-copy {
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 .copy-reveal {

@@ -1,0 +1,107 @@
+{
+  "locale": "zh",
+  "htmlLang": "zh-Hans",
+  "name": "Scra Atlas",
+  "signature": "A map of systems I have built.",
+  "description": {
+    "text": "一个持续更新的个人技术档案。",
+    "lang": "zh-Hans"
+  },
+  "archiveAction": {
+    "label": "Enter archive",
+    "href": "/#timeline"
+  },
+  "status": {
+    "status": "Active",
+    "focus": "AI / Systems",
+    "updated": "2026"
+  },
+  "sections": {
+    "timeline": {
+      "id": "timeline",
+      "label": "Timeline",
+      "href": "/#timeline",
+      "surface": "bone",
+      "eyebrow": "DEVELOPMENT PATH",
+      "title": "Timeline",
+      "summary": "Timeline maps verified stages of work and learning into a chronological path.",
+      "status": "SOURCE MILESTONES IN PREPARATION"
+    },
+    "projects": {
+      "id": "projects",
+      "label": "Projects",
+      "href": "/#projects",
+      "surface": "void",
+      "eyebrow": "PROJECT DATABASE",
+      "title": "Projects",
+      "summary": "Projects organize real systems as an explorable archive tree, with each branch tied to evidence and implementation context.",
+      "status": "PROJECTS INDEXED"
+    },
+    "logs": {
+      "id": "logs",
+      "label": "Logs",
+      "href": "/#logs",
+      "surface": "bone",
+      "eyebrow": "ENGINEERING NOTES",
+      "title": "Logs",
+      "summary": "Engineering notes. In context.",
+      "status": "AUTHORED RECORDS"
+    }
+  },
+  "ui": {
+    "hero": {
+      "statusLabel": "STATUS",
+      "focusLabel": "FOCUS",
+      "updatedLabel": "UPDATED"
+    },
+    "currentIndex": {
+      "heading": "Current index"
+    },
+    "navigation": {
+      "primaryLabel": "Primary navigation"
+    },
+    "locale": {
+      "groupLabel": "Language",
+      "label": "LANG",
+      "zh": "ZH",
+      "en": "EN"
+    },
+    "entry": {
+      "dialogLabel": "Archive entry",
+      "status": "ARCHIVE READY",
+      "title": "SCRA ATLAS",
+      "enter": "ENTER ARCHIVE",
+      "skip": "SKIP INTRO"
+    },
+    "timeline": {
+      "recordsLabel": "Development milestones, latest first",
+      "focusLabel": "Focus",
+      "markerLabel": "Focus milestone",
+      "verifiedMilestones": "VERIFIED MILESTONES"
+    },
+    "projects": {
+      "empty": "No project records are currently indexed.",
+      "indexLabel": "Project index",
+      "indexHeading": "Project index",
+      "activeProject": "Active project",
+      "openPublicProject": "Open public project",
+      "technicalStack": "Technical stack",
+      "capabilities": "Capabilities",
+      "systemMap": "System map",
+      "indexed": "PROJECTS INDEXED"
+    },
+    "logs": {
+      "empty": "No authored notes are indexed yet.",
+      "indexLabel": "Engineering notes",
+      "indexHeading": "Note index",
+      "logPrefix": "LOG",
+      "authoredRecords": "AUTHORED RECORDS"
+    },
+    "effects": {
+      "groupLabel": "Effect mode",
+      "label": "EFFECTS",
+      "full": "FULL",
+      "static": "STATIC"
+    }
+  }
+}

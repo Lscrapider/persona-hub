@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import { ENTRY_SESSION_KEY } from "@/core/entry";
+import { useLocaleContent } from "@/i18n/LocaleProvider";
 
 const FULL_RITUAL_DURATION_MS = 1200;
 
@@ -20,6 +21,8 @@ type EntryGateProps = Readonly<{
 type EntryState = "active" | "complete";
 
 export function EntryGate({ focusTargetRef, onEnter }: EntryGateProps) {
+  const { content } = useLocaleContent();
+  const copy = content.site.ui.entry;
   const [entryState, setEntryState] = useState<EntryState>("active");
   const completedRef = useRef(false);
   const completionTimerRef = useRef<number | null>(null);
@@ -100,7 +103,7 @@ export function EntryGate({ focusTargetRef, onEnter }: EntryGateProps) {
 
   return (
     <section
-      aria-label="Archive entry"
+      aria-label={copy.dialogLabel}
       aria-modal="true"
       className="entry-gate"
       ref={gateRef}
@@ -108,8 +111,8 @@ export function EntryGate({ focusTargetRef, onEnter }: EntryGateProps) {
     >
       <div aria-hidden="true" className="entry-gate__trace" />
       <div className="entry-gate__content">
-        <p className="entry-gate__status">ARCHIVE READY</p>
-        <p className="entry-gate__title">SCRA ATLAS</p>
+        <p className="entry-gate__status">{copy.status}</p>
+        <p className="entry-gate__title">{copy.title}</p>
         <button
           className="entry-gate__enter"
           data-entry-action
@@ -117,7 +120,7 @@ export function EntryGate({ focusTargetRef, onEnter }: EntryGateProps) {
           type="button"
         >
           <span aria-hidden="true">→</span>
-          ENTER ARCHIVE
+          {copy.enter}
         </button>
       </div>
       <button
@@ -126,7 +129,7 @@ export function EntryGate({ focusTargetRef, onEnter }: EntryGateProps) {
         onClick={completeEntry}
         type="button"
       >
-        SKIP INTRO
+        {copy.skip}
       </button>
     </section>
   );

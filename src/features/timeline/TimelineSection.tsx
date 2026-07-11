@@ -1,18 +1,28 @@
-import { getArchiveSection } from "@/content/archive";
 import { ArchiveSection } from "@/features/archive/ArchiveSection";
+import { useLocaleContent } from "@/i18n/LocaleProvider";
 
-type TimelineSectionProps = Readonly<{
-  revealEnabled: boolean;
-}>;
+import { TimelineRail } from "./TimelineRail";
+
+import "./timeline.css";
+
+type TimelineSectionProps = Readonly<{ revealEnabled: boolean }>;
 
 export function TimelineSection({ revealEnabled }: TimelineSectionProps) {
+  const { content } = useLocaleContent();
+  const { archive, site } = content;
+
   return (
     <ArchiveSection
       className="timeline-section"
-      definition={getArchiveSection("timeline")}
+      definition={site.sections.timeline}
       revealEnabled={revealEnabled}
+      status={`${archive.timeline.length.toString().padStart(2, "0")} ${site.ui.timeline.verifiedMilestones}`}
     >
-      <div aria-hidden="true" className="archive-section__trace archive-section__trace--timeline" />
+      <TimelineRail
+        labels={site.ui.timeline}
+        records={archive.timeline}
+        revealEnabled={revealEnabled}
+      />
     </ArchiveSection>
   );
 }

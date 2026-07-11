@@ -2,31 +2,34 @@
 
 import { usePathname } from "next/navigation";
 
-import { getArchiveSection } from "@/content/archive";
-import { siteNavigation } from "@/content/site";
+import { getArchiveSections } from "@/content/archive";
+import { getLocaleArchiveHref } from "@/core/locale";
 import { CopyReveal } from "@/effects/primitives/CopyReveal";
 import { useActiveArchiveSection } from "@/features/archive/useActiveArchiveSection";
+import { useLocaleContent } from "@/i18n/LocaleProvider";
 
 type SiteHeaderProps = Readonly<{
   revealEnabled: boolean;
 }>;
 
 export function SiteHeader({ revealEnabled }: SiteHeaderProps) {
+  const { content } = useLocaleContent();
   const pathname = usePathname();
   const isHome = pathname === "/";
   const activeSectionId = useActiveArchiveSection(isHome);
   const activeSection = activeSectionId
-    ? getArchiveSection(activeSectionId)
+    ? content.site.sections[activeSectionId]
     : null;
+  const navigation = getArchiveSections(content.site);
 
   return (
     <header
       className="site-header"
       data-surface={activeSection?.surface ?? "bone"}
     >
-      <nav aria-label="Primary navigation">
+      <nav aria-label={content.site.ui.navigation.primaryLabel}>
         <ul className="site-header__navigation">
-          {siteNavigation.map((item) => {
+          {navigation.map((item) => {
             const isActive = item.id === activeSectionId;
 
             return (
@@ -35,7 +38,7 @@ export function SiteHeader({ revealEnabled }: SiteHeaderProps) {
                   aria-current={isActive ? "location" : undefined}
                   className="site-header__link"
                   data-active={isActive || undefined}
-                  href={item.href}
+                  href={getLocaleArchiveHref(content.site.locale, item.href)}
                 >
                   <CopyReveal enabled={revealEnabled} text={item.label} />
                 </a>

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "01",
+    "period": "2018.09",
+    "sortDate": "2018.09",
+    "kind": "EDUCATION",
+    "title": "计算机科学与技术",
+    "description": "开始计算机科学与技术本科学习，在软件开发与系统思维上建立基础。"
+  },
+  {
+    "id": "02",
+    "period": "2022.07",
+    "sortDate": "2022.07",
+    "kind": "WORK",
+    "title": "Java 应用开发工程师",
+    "description": "开始从事 Java 后端与应用开发，参与服务、API 与业务系统的工程化交付。"
+  },
+  {
+    "id": "03",
+    "period": "2024.10",
+    "sortDate": "2024.10",
+    "kind": "PREPARATION",
+    "title": "IELTS 备考",
+    "description": "开始 IELTS 备考，为后续海外学习做准备。"
+  },
+  {
+    "id": "04",
+    "period": "2025.05",
+    "sortDate": "2025.05",
+    "kind": "EDUCATION",
+    "title": "UNSW · AI 方向",
+    "organisation": "University of New South Wales",
+    "location": "Sydney",
+    "description": "开始 University of New South Wales 信息技术项目，聚焦 AI 方向。"
+  },
+  {
+    "id": "05",
+    "period": "2026.07",
+    "sortDate": "2026.07",
+    "kind": "WORK",
+    "title": "AI 应用开发工程师",
+    "description": "开始 AI 应用开发工作，聚焦 AI 能力落地与产品化开发。"
+  }
+]

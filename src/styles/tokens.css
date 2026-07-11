@@ -10,6 +10,8 @@
 
   --font-display: var(--font-league-gothic), "Arial Narrow", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-cjk-heading: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans CJK SC", sans-serif;
   --font-body: var(--font-manrope), "PingFang SC", "Hiragino Sans GB",
     "Microsoft YaHei", system-ui, sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;

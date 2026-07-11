@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
 
-import { siteContent } from "@/content/site";
 import { EffectModeProvider } from "@/effects/runtime/EffectMode";
 
 import "./globals.css";
@@ -25,10 +24,10 @@ const manrope = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: siteContent.name,
+    default: "Scra Atlas",
     template: "%s | Scra Atlas",
   },
-  description: siteContent.description.text,
+  description: "A living personal technical archive.",
 };
 
 type RootLayoutProps = Readonly<{
@@ -41,8 +40,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
       className={leagueGothic.variable + " " + manrope.variable}
       data-effect-mode="static"
       data-entry-ritual="skip"
+      data-locale="zh"
       data-scroll-behavior="smooth"
-      lang="en"
+      lang="zh-Hans"
       suppressHydrationWarning
     >
       <body>

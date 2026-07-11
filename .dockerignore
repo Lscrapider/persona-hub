@@ -1,0 +1,9 @@
+.git
+.next
+node_modules
+.pnpm-store
+.idea
+.env
+.env.*
+npm-debug.log*
+pnpm-debug.log*

@@ -91,11 +91,19 @@
   color: var(--color-signal);
 }
 
-.effect-mode-control {
+.archive-controls {
   position: fixed;
   z-index: var(--layer-overlay);
   inset-inline-end: max(var(--space-sm), env(safe-area-inset-right));
   inset-block-end: max(var(--space-sm), env(safe-area-inset-bottom));
+  display: grid;
+  gap: 1px;
+  background: var(--color-line);
+}
+
+.effect-mode-control,
+.locale-control {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-2xs);
@@ -108,12 +116,14 @@
   line-height: 1;
 }
 
-.effect-mode-control__label {
+.effect-mode-control__label,
+.locale-control__label {
   margin-inline-end: var(--space-xs);
   color: var(--color-silver);
 }
 
-.effect-mode-control__option {
+.effect-mode-control__option,
+.locale-control__option {
   position: relative;
   min-inline-size: var(--size-touch);
   padding: var(--space-xs);
@@ -124,7 +134,8 @@
   letter-spacing: inherit;
 }
 
-.effect-mode-control__option::before {
+.effect-mode-control__option::before,
+.locale-control__option::before {
   position: absolute;
   inset-inline-start: 50%;
   inset-block-end: var(--space-2xs);
@@ -140,11 +151,13 @@
     transform var(--duration-fast) var(--ease-out);
 }
 
-.effect-mode-control__option:is(:focus-visible, [data-active]) {
+.effect-mode-control__option:is(:focus-visible, [data-active]),
+.locale-control__option:is(:focus-visible, [data-active]) {
   color: var(--color-bone);
 }
 
-.effect-mode-control__option:is(:focus-visible, [data-active])::before {
+.effect-mode-control__option:is(:focus-visible, [data-active])::before,
+.locale-control__option:is(:focus-visible, [data-active])::before {
   opacity: 1;
   transform: translateX(-50%) scale(1);
 }
@@ -224,7 +237,8 @@
 }
 
 html[data-effect-mode="static"] .site-header__link::after,
-html[data-effect-mode="static"] .effect-mode-control__option::before {
+html[data-effect-mode="static"] .effect-mode-control__option::before,
+html[data-effect-mode="static"] .locale-control__option::before {
   transition: none;
 }
 
@@ -239,12 +253,17 @@ html[data-effect-mode="static"] .effect-mode-control__option::before {
 }
 
 @media (max-width: 34rem) {
-  .effect-mode-control {
+  .archive-controls {
     inset-inline: var(--space-xs);
+  }
+
+  .effect-mode-control,
+  .locale-control {
     justify-content: center;
   }
 
-  .effect-mode-control__label {
+  .effect-mode-control__label,
+  .locale-control__label {
     position: absolute;
     inline-size: 1px;
     block-size: 1px;

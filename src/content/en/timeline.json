@@ -1,0 +1,44 @@
+[
+  {
+    "id": "01",
+    "period": "2018.09",
+    "sortDate": "2018.09",
+    "kind": "EDUCATION",
+    "title": "Computer Science and Technology",
+    "description": "Began undergraduate study in Computer Science and Technology, building a foundation in software development and systems thinking."
+  },
+  {
+    "id": "02",
+    "period": "2022.07",
+    "sortDate": "2022.07",
+    "kind": "WORK",
+    "title": "Java Application Development Engineer",
+    "description": "Began Java backend and application development work across services, APIs, and business systems."
+  },
+  {
+    "id": "03",
+    "period": "2024.10",
+    "sortDate": "2024.10",
+    "kind": "PREPARATION",
+    "title": "IELTS Preparation",
+    "description": "Began IELTS preparation for the next stage of overseas study."
+  },
+  {
+    "id": "04",
+    "period": "2025.05",
+    "sortDate": "2025.05",
+    "kind": "EDUCATION",
+    "title": "UNSW · AI Focus",
+    "organisation": "University of New South Wales",
+    "location": "Sydney",
+    "description": "Began the Information Technology program, with an AI focus, at the University of New South Wales in Sydney."
+  },
+  {
+    "id": "05",
+    "period": "2026.07",
+    "sortDate": "2026.07",
+    "kind": "WORK",
+    "title": "AI Application Development Engineer",
+    "description": "Began AI application development work focused on bringing AI capabilities into products."
+  }
+]

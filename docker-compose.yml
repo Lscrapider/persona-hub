@@ -1,0 +1,9 @@
+services:
+  scra-atlas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scra-atlas
+    ports:
+      - "5778:5778"
+    restart: unless-stopped

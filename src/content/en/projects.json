@@ -1,0 +1,105 @@
+[
+  {
+    "id": "01",
+    "slug": "finance-management-ai",
+    "title": "Financial Management AI",
+    "status": "IN PROGRESS",
+    "year": "FINANCE-01",
+    "summary": "An intelligent financial analysis and knowledge-augmentation system for personal investment research.",
+    "content": "Combines market data, financial indicators, news and filings, and a personal investment knowledge base. Multi-model agents, OCR, and vector retrieval produce traceable structured analysis, risk signals, and research support.",
+    "url": "https://github.com/Lscrapider/financial-management-ai",
+    "stack": [
+      "Spring AI · LangChain · LangGraph",
+      "Python · Sentence Transformers · pgvector",
+      "DeepSeek · Qwen-VL OCR · RabbitMQ"
+    ],
+    "capabilities": [
+      "Multi-source market-data ingestion, cleaning, and scheduled synchronization",
+      "OCR knowledge-base processing, semantic retrieval, and vector storage",
+      "AI agent tool calls and structured investment-analysis reports"
+    ],
+    "tree": [
+      {
+        "name": "financial-management-ai",
+        "children": [
+          {
+            "name": "backend-java",
+            "detail": "Spring Boot, Spring AI, access control, business orchestration, and a data gateway"
+          },
+          {
+            "name": "ai-python",
+            "detail": "LangGraph agents, OCR, embeddings, vector retrieval, and asynchronous workers"
+          },
+          {
+            "name": "frontend-vue",
+            "detail": "Vue 3 administration, market dashboards, knowledge bases, and AI analysis views"
+          },
+          {
+            "name": "database",
+            "detail": "PostgreSQL, pgvector, InfluxDB, and data-migration scripts"
+          },
+          {
+            "name": "docker",
+            "detail": "Docker Compose service orchestration and local deployment configuration"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "02",
+    "slug": "urban-sidequest",
+    "title": "Urban Sidequest",
+    "status": "IN PROGRESS",
+    "year": "URBAN-01",
+    "summary": "An AI-assisted route decision system for urban exploration.",
+    "content": "Built on city maps and real POI data, it combines staged candidate retrieval, preference modelling, and route ranking to generate executable, explainable, and adjustable exploration routes.",
+    "url": "https://github.com/Lscrapider/urban-sidequest",
+    "stack": [
+      "AI Route Intelligence",
+      "POI Retrieval & Ranking",
+      "Preference Learning",
+      "Kotlin · Jetpack Compose",
+      "Java · Spring Boot",
+      "Python · ML Pipeline"
+    ],
+    "capabilities": [
+      "Multi-source POI semantic retrieval and quality filtering",
+      "Route preference learning and multi-objective ranking",
+      "Explainable route generation with dynamic alternatives",
+      "Feedback-driven optimization after route execution"
+    ],
+    "tree": [
+      {
+        "name": "Intelligence Layer",
+        "children": [
+          {
+            "name": "POI Retrieval",
+            "detail": "Multi-source place retrieval, semantic mapping, and candidate compression"
+          },
+          {
+            "name": "Route Preference Model",
+            "detail": "Route-quality learning and ranking from preference data"
+          },
+          {
+            "name": "Route Decision Engine",
+            "detail": "Primary and alternative route generation, explanation, and adjustment"
+          }
+        ]
+      },
+      {
+        "name": "Product Layer",
+        "children": [
+          {
+            "name": "Android Experience",
+            "detail": "Map selection, route presentation, execution, and check-in feedback"
+          },
+          {
+            "name": "Backend Services",
+            "detail": "Route orchestration, data services, and a training-data feedback loop"
+          }
+        ]
+      }
+    ]
+  }
+]

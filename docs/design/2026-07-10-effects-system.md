@@ -1,7 +1,7 @@
 # Scra Atlas effects system
 
 **Status:** current
-**Updated:** 2026-07-10
+**Updated:** 2026-07-11
 
 ## Purpose
 
@@ -14,6 +14,9 @@ Effects express archive entry, locating, reading, and transfer. They are not gen
 - Transfer: native fragment navigation moves the reader without scroll hijacking.
 - Archive: surface changes and Current Index describe movement through one long document.
 - Scene: the Hero provides one focused atmospheric field without competing with its content.
+- Focus: Timeline uses IntersectionObserver to identify the reader's focal milestone; its marker buttons offer the same state explicitly without a scroll listener.
+- Select and expand: Projects changes selected record state in DOM/SVG and uses native `details` / `summary` for recursive tree branches.
+- Read: Logs changes an inline semantic article reader; its optional word field remains background-only scenery.
 
 ## CopyReveal
 
@@ -33,19 +36,41 @@ The Hero restores the bone information field, oversized single-line title, right
 
 The word field uses repeated concentric Canvas tracks filled with real technical directions such as AI AGENTS, JAVA, PYTHON, MOBILE SYSTEMS, DEPLOYMENT, and RESEARCH NOTES. Its backing store, centre, and radii are measured from the rendered scene with ResizeObserver so each track extends naturally beyond the visible field at every browser size. It does not use fake status codes, terminal validation text, random telemetry, density rows, routes, nodes, dotted guide rings, or floating labels.
 
-Only two effects continue after entry:
+Within the Hero, only two effects continue after entry:
 
 1. The signature typewriter types, holds, deletes right-to-left, pauses, and repeats.
 2. Canvas text tracks move slowly around concentric paths at different periods.
 
 Text-track motion pauses when the Hero leaves the viewport or the document is hidden.
 
+## Archive feature effects
+
+Timeline keeps every milestone in semantic DOM. An aria-hidden SVG trace aligns to
+the responsive rail, draws once when its group becomes visible in FULL, and is
+complete immediately in STATIC. IntersectionObserver selects the focal record;
+the marker buttons remain keyboard-operable and do not depend on scrolling.
+
+Projects uses DOM/CSS/SVG state because project selection and recursive system
+tree expansion are reader-facing controls. The explorer never hides project
+labels, and native `details` / `summary` branches preserve keyboard expansion
+without an emulated ARIA tree.
+
+Logs renders its list, metadata, and selected Markdown article in semantic DOM.
+Its only visual enhancement is the bounded, aria-hidden Canvas 2D
+`LogWordField` behind that reader. The field draws deterministic placements of
+real manifest and selected-log titles, dates, and tags; it does not make fake
+logs, terminal output, or required content. `ResizeObserver`, pointer activity,
+and section/document visibility can request one redraw at a time. FULL may run
+a short entrance composition, STATIC draws a deterministic final frame, and
+there is no permanent requestAnimationFrame loop. If Canvas is unavailable,
+the foreground reader remains complete.
+
 ## Modes
 
 The system has exactly two modes:
 
-- FULL: one-time CopyReveal and the two continuous Hero effects.
-- STATIC: final copy and final Hero frame immediately, with no visual animation.
+- FULL: one-time CopyReveal, the two continuous Hero effects, a one-time Timeline trace draw, and only bounded active Logs-word-field work.
+- STATIC: final copy, final Hero frame, complete Timeline trace, and a deterministic Logs word-field frame when its visible field is rendered, with no visual animation.
 
 System reduced motion starts in STATIC. A user can choose and persist FULL. The runtime, root dataset, and CSS all respect that explicit choice. No third or intermediate effect mode exists.
 
@@ -53,15 +78,16 @@ System reduced motion starts in STATIC. A user can choose and persist FULL. The 
 
 EntryGate may provide a short first-session ritual with an immediate skip action. While it is visible, the archive shell is hidden and becomes inert after hydration. With JavaScript disabled, the gate is skipped by default and content is readable.
 
-The Hero's Canvas scene is aria-hidden and has a non-empty static fallback. Failure, backgrounding, mode changes, or an unavailable browser feature cannot hide content, trap focus, or leave an empty Hero region.
+The Hero's Canvas scene is aria-hidden and has a non-empty static fallback. The Logs Canvas is also aria-hidden and optional. Failure, backgrounding, mode changes, or an unavailable browser feature cannot hide content, trap focus, leave an empty Hero region, or make the Logs reader unavailable.
 
 ## Implementation boundaries
 
+- Author-owned timeline, project, and log manifests live under `src/content`; Markdown filenames are allowlisted by the log manifest and parsed into safe blocks on the server before client rendering.
 - Content records do not import effects.
 - Feature sections own semantic structure.
 - Shared primitives do not import archive records.
-- HomeExperience composes instead of rendering low-level scene choreography.
-- IntersectionObserver drives visibility and active section state. No scroll loop, scroll snap, Lenis, or scroll hijacking is allowed.
+- HomeExperience composes Hero → Timeline → Projects → Logs and forwards typed data instead of parsing Markdown or accessing files.
+- IntersectionObserver drives Timeline focus, archive visibility, and active-section state. No scroll loop, scroll snap, Lenis, or scroll hijacking is allowed.
 
 ## Aesthetic checks
 

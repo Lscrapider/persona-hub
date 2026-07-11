@@ -2,7 +2,6 @@
 
 import { type RefObject, useRef } from "react";
 
-import { currentIndex, siteContent, siteStatus } from "@/content/site";
 import { CopyReveal } from "@/effects/primitives/CopyReveal";
 import { TypewriterText } from "@/effects/primitives/TypewriterText";
 import { EffectBoundary } from "@/effects/runtime/EffectBoundary";
@@ -12,6 +11,8 @@ import {
   KineticTypeFieldFallback,
 } from "@/features/home/KineticTypeField";
 import { CurrentIndex } from "@/features/home/CurrentIndex";
+import { useLocaleContent } from "@/i18n/LocaleProvider";
+import { getLocaleArchiveHref } from "@/core/locale";
 
 type HomeHeroProps = Readonly<{
   archiveActionRef: RefObject<HTMLAnchorElement | null>;
@@ -22,9 +23,17 @@ export function HomeHero({
   archiveActionRef,
   revealEnabled,
 }: HomeHeroProps) {
+  const { content } = useLocaleContent();
+  const { archive, site } = content;
   const heroRef = useRef<HTMLElement>(null);
   const sceneActive = useSceneActivity(heroRef);
   const shouldAnimateScene = revealEnabled && sceneActive;
+  const currentIndex = archive.projects.map((project) => ({
+    id: project.id,
+    title: project.title,
+    meta: project.summary,
+    href: getLocaleArchiveHref(site.locale, "/#projects"),
+  }));
 
   return (
     <section
@@ -39,24 +48,24 @@ export function HomeHero({
             <CopyReveal
               className="home-hero__title-lockup"
               enabled={revealEnabled}
-              text={siteContent.name}
+              text={site.name}
             />
           </h1>
 
           <p className="home-hero__signature">
             <TypewriterText
               active={shouldAnimateScene}
-              text={siteContent.signature}
+              text={site.signature}
             />
           </p>
           <p
             className="home-hero__description"
-            lang={siteContent.description.lang}
+            lang={site.description.lang}
           >
             <CopyReveal
               enabled={revealEnabled}
-              lang={siteContent.description.lang}
-              text={siteContent.description.text}
+              lang={site.description.lang}
+              text={site.description.text}
             />
           </p>
         </div>
@@ -64,33 +73,33 @@ export function HomeHero({
         <dl className="home-hero__status">
           <div>
             <dt>
-              <CopyReveal enabled={revealEnabled} text="STATUS" />
+              <CopyReveal enabled={revealEnabled} text={site.ui.hero.statusLabel} />
             </dt>
             <dd>
-              <CopyReveal enabled={revealEnabled} text={siteStatus.status} />
+              <CopyReveal enabled={revealEnabled} text={site.status.status} />
             </dd>
           </div>
           <div>
             <dt>
-              <CopyReveal enabled={revealEnabled} text="FOCUS" />
+              <CopyReveal enabled={revealEnabled} text={site.ui.hero.focusLabel} />
             </dt>
             <dd>
-              <CopyReveal enabled={revealEnabled} text={siteStatus.focus} />
+              <CopyReveal enabled={revealEnabled} text={site.status.focus} />
             </dd>
           </div>
           <div>
             <dt>
-              <CopyReveal enabled={revealEnabled} text="UPDATED" />
+              <CopyReveal enabled={revealEnabled} text={site.ui.hero.updatedLabel} />
             </dt>
             <dd>
-              <CopyReveal enabled={revealEnabled} text={siteStatus.updated} />
+              <CopyReveal enabled={revealEnabled} text={site.status.updated} />
             </dd>
           </div>
         </dl>
 
         <a
           className="home-hero__action"
-          href={siteContent.archiveAction.href}
+          href={getLocaleArchiveHref(site.locale, site.archiveAction.href)}
           ref={archiveActionRef}
         >
           <span aria-hidden="true" className="home-hero__action-arrow">
@@ -98,7 +107,7 @@ export function HomeHero({
           </span>
           <CopyReveal
             enabled={revealEnabled}
-            text={siteContent.archiveAction.label}
+            text={site.archiveAction.label}
           />
         </a>
       </div>
@@ -109,7 +118,11 @@ export function HomeHero({
         </EffectBoundary>
       </div>
 
-      <CurrentIndex items={currentIndex} revealEnabled={revealEnabled} />
+      <CurrentIndex
+        heading={site.ui.currentIndex.heading}
+        items={currentIndex}
+        revealEnabled={revealEnabled}
+      />
     </section>
   );
 }

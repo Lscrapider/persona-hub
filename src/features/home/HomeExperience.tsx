@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { LocaleProvider, useLocaleContent } from "@/i18n/LocaleProvider";
+import type { LocalizedArchiveContent } from "@/lib/content/types";
 import { EffectModeControl } from "@/ui/EffectModeControl";
+import { LocaleControl } from "@/ui/LocaleControl";
 import { EntryGate } from "@/features/entry/EntryGate";
 import { HomeHero } from "@/features/home/HomeHero";
-import { LabSection } from "@/features/lab/LabSection";
 import { LogsSection } from "@/features/logs/LogsSection";
 import { ProjectsSection } from "@/features/projects/ProjectsSection";
 import { TimelineSection } from "@/features/timeline/TimelineSection";
@@ -13,7 +15,20 @@ import { TimelineSection } from "@/features/timeline/TimelineSection";
 import "@/features/archive/archive.css";
 import "./home.css";
 
-export function HomeExperience() {
+type HomeExperienceProps = Readonly<{
+  content: LocalizedArchiveContent;
+}>;
+
+export function HomeExperience({ content }: HomeExperienceProps) {
+  return (
+    <LocaleProvider content={content}>
+      <LocalizedHomeExperience />
+    </LocaleProvider>
+  );
+}
+
+function LocalizedHomeExperience() {
+  const { locale } = useLocaleContent();
   const [hasHydrated, setHasHydrated] = useState(false);
   const [entryComplete, setEntryComplete] = useState(false);
   const archiveActionRef = useRef<HTMLAnchorElement>(null);
@@ -47,17 +62,19 @@ export function HomeExperience() {
         className="archive-experience"
         inert={isArchiveLocked || undefined}
       >
-        <main className="home-experience">
+        <main className="home-experience" key={locale}>
           <HomeHero
             archiveActionRef={archiveActionRef}
             revealEnabled={revealEnabled}
           />
+          <TimelineSection revealEnabled={revealEnabled} />
           <ProjectsSection revealEnabled={revealEnabled} />
           <LogsSection revealEnabled={revealEnabled} />
-          <TimelineSection revealEnabled={revealEnabled} />
-          <LabSection revealEnabled={revealEnabled} />
         </main>
-        <EffectModeControl />
+        <div className="archive-controls">
+          <LocaleControl />
+          <EffectModeControl />
+        </div>
       </div>
       <EntryGate focusTargetRef={archiveActionRef} onEnter={handleEnter} />
     </>

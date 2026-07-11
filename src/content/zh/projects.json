@@ -1,0 +1,105 @@
+[
+  {
+    "id": "01",
+    "slug": "finance-management-ai",
+    "title": "理财分析 AI",
+    "status": "IN PROGRESS",
+    "year": "FINANCE-01",
+    "summary": "面向个人投资研究的智能理财分析与知识增强系统。",
+    "content": "整合股市行情、财务指标、新闻公告与个人投资知识库，利用多模型 Agent、OCR 和向量检索能力，为用户提供可追溯的结构化投资分析、风险提示与研究参考。",
+    "url": "https://github.com/Lscrapider/financial-management-ai",
+    "stack": [
+      "Spring AI · LangChain · LangGraph",
+      "Python · Sentence Transformers · pgvector",
+      "DeepSeek · Qwen-VL OCR · RabbitMQ"
+    ],
+    "capabilities": [
+      "多源行情数据采集、清洗与定时同步",
+      "OCR 知识库处理、语义检索与向量化存储",
+      "AI Agent 工具调用与结构化投资分析报告"
+    ],
+    "tree": [
+      {
+        "name": "financial-management-ai",
+        "children": [
+          {
+            "name": "backend-java",
+            "detail": "Spring Boot、Spring AI、权限控制、业务编排与数据网关"
+          },
+          {
+            "name": "ai-python",
+            "detail": "LangGraph Agent、OCR、Embedding、向量检索与异步 Worker"
+          },
+          {
+            "name": "frontend-vue",
+            "detail": "Vue 3 管理端、行情看板、知识库与 AI 分析结果展示"
+          },
+          {
+            "name": "database",
+            "detail": "PostgreSQL、pgvector、InfluxDB 与数据迁移脚本"
+          },
+          {
+            "name": "docker",
+            "detail": "Docker Compose 服务编排与本地部署配置"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "02",
+    "slug": "urban-sidequest",
+    "title": "城市副本",
+    "status": "IN PROGRESS",
+    "year": "URBAN-01",
+    "summary": "AI 驱动的城市探索路线决策系统。",
+    "content": "以中国城市地图与真实 POI 数据为基础，结合多阶段候选召回、偏好建模和路线排序，为用户生成可执行、可解释、可调整的城市探索路线。",
+    "url": "https://github.com/Lscrapider/urban-sidequest",
+    "stack": [
+      "AI Route Intelligence",
+      "POI Retrieval & Ranking",
+      "Preference Learning",
+      "Kotlin · Jetpack Compose",
+      "Java · Spring Boot",
+      "Python · ML Pipeline"
+    ],
+    "capabilities": [
+      "多源 POI 语义召回与质量筛选",
+      "路线偏好学习与多目标排序",
+      "可解释路线生成与动态备选方案",
+      "路线执行反馈驱动的闭环优化"
+    ],
+    "tree": [
+      {
+        "name": "Intelligence Layer",
+        "children": [
+          {
+            "name": "POI Retrieval",
+            "detail": "多源地点召回、语义映射与候选压缩"
+          },
+          {
+            "name": "Route Preference Model",
+            "detail": "基于偏好数据的路线质量学习与排序"
+          },
+          {
+            "name": "Route Decision Engine",
+            "detail": "主推路线与备选路线生成、解释和调整"
+          }
+        ]
+      },
+      {
+        "name": "Product Layer",
+        "children": [
+          {
+            "name": "Android Experience",
+            "detail": "地图选区、路线展示、执行与打卡反馈"
+          },
+          {
+            "name": "Backend Services",
+            "detail": "路线编排、数据服务与训练数据闭环"
+          }
+        ]
+      }
+    ]
+  }
+]

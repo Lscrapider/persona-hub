@@ -1,17 +1,25 @@
-import type { IndexItem } from "@/content/site";
 import { CopyReveal } from "@/effects/primitives/CopyReveal";
+import { containsCjk } from "@/lib/typography";
+
+type CurrentIndexItem = Readonly<{
+  id: string;
+  title: string;
+  meta: string;
+  href: string;
+}>;
 
 type CurrentIndexProps = Readonly<{
-  items: readonly IndexItem[];
+  heading: string;
+  items: readonly CurrentIndexItem[];
   revealEnabled: boolean;
 }>;
 
-export function CurrentIndex({ items, revealEnabled }: CurrentIndexProps) {
+export function CurrentIndex({ heading, items, revealEnabled }: CurrentIndexProps) {
   return (
     <section className="current-index" aria-labelledby="current-index-title">
       <div className="current-index__heading">
         <h2 id="current-index-title">
-          <CopyReveal enabled={revealEnabled} text="Current index" />
+          <CopyReveal enabled={revealEnabled} text={heading} />
         </h2>
       </div>
 
@@ -23,11 +31,22 @@ export function CurrentIndex({ items, revealEnabled }: CurrentIndexProps) {
                 <CopyReveal enabled={revealEnabled} text={item.id} />
               </span>
               <span aria-hidden="true" className="current-index__locator" />
-              <span className="current-index__title">
-                <CopyReveal enabled={revealEnabled} text={item.title} />
+              <span
+                className="current-index__title"
+                data-cjk-heading={containsCjk(item.title) || undefined}
+              >
+                <CopyReveal
+                  className="current-index__title-copy"
+                  enabled={revealEnabled}
+                  text={item.title}
+                />
               </span>
               <span className="current-index__meta">
-                <CopyReveal enabled={revealEnabled} text={item.meta} />
+                <CopyReveal
+                  className="current-index__summary-copy"
+                  enabled={revealEnabled}
+                  text={item.meta}
+                />
               </span>
             </a>
           </li>

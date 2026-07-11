@@ -2,18 +2,20 @@
 
 import { EFFECT_MODES, type EffectMode } from "@/core/effect-mode";
 import { useEffectMode } from "@/effects/runtime/EffectMode";
-
-const EFFECT_MODE_LABELS: Record<EffectMode, string> = {
-  full: "FULL",
-  static: "STATIC",
-};
+import { useLocaleContent } from "@/i18n/LocaleProvider";
 
 export function EffectModeControl() {
   const { mode, setMode } = useEffectMode();
+  const { content } = useLocaleContent();
+  const labels: Record<EffectMode, string> = {
+    full: content.site.ui.effects.full,
+    static: content.site.ui.effects.static,
+  };
+  const copy = content.site.ui.effects;
 
   return (
-    <div aria-label="Effect mode" className="effect-mode-control" role="group">
-      <span className="effect-mode-control__label">EFFECTS</span>
+    <div aria-label={copy.groupLabel} className="effect-mode-control" role="group">
+      <span className="effect-mode-control__label">{copy.label}</span>
       {EFFECT_MODES.map((effectMode) => {
         const isActive = mode === effectMode;
 
@@ -26,7 +28,7 @@ export function EffectModeControl() {
             onClick={() => setMode(effectMode)}
             type="button"
           >
-            {EFFECT_MODE_LABELS[effectMode]}
+            {labels[effectMode]}
           </button>
         );
       })}

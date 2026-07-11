@@ -1,38 +1,28 @@
-import { getArchiveSection, projectRecords } from "@/content/archive";
-import { CopyReveal } from "@/effects/primitives/CopyReveal";
 import { ArchiveSection } from "@/features/archive/ArchiveSection";
+import { useLocaleContent } from "@/i18n/LocaleProvider";
 
-type ProjectsSectionProps = Readonly<{
-  revealEnabled: boolean;
-}>;
+import { ProjectExplorer } from "./ProjectExplorer";
+
+import "./projects.css";
+
+type ProjectsSectionProps = Readonly<{ revealEnabled: boolean }>;
 
 export function ProjectsSection({ revealEnabled }: ProjectsSectionProps) {
+  const { content } = useLocaleContent();
+  const { archive, site } = content;
+
   return (
     <ArchiveSection
       className="projects-section"
-      definition={getArchiveSection("projects")}
+      definition={site.sections.projects}
       revealEnabled={revealEnabled}
+      status={`${archive.projects.length.toString().padStart(2, "0")} ${site.ui.projects.indexed}`}
     >
-      <ol className="projects-section__records">
-        {projectRecords.map((record) => (
-          <li className="projects-section__record" key={record.id}>
-            <a className="projects-section__link" href={record.href}>
-              <span className="projects-section__id">
-                <CopyReveal enabled={revealEnabled} text={record.id} />
-              </span>
-              <span className="projects-section__name">
-                <CopyReveal enabled={revealEnabled} text={record.title} />
-              </span>
-              <span className="projects-section__meta">
-                <CopyReveal enabled={revealEnabled} text={record.meta} />
-              </span>
-              <span aria-hidden="true" className="projects-section__arrow">
-                →
-              </span>
-            </a>
-          </li>
-        ))}
-      </ol>
+      <ProjectExplorer
+        copy={site.ui.projects}
+        projects={archive.projects}
+        revealEnabled={revealEnabled}
+      />
     </ArchiveSection>
   );
 }

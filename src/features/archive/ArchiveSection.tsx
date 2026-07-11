@@ -1,13 +1,14 @@
 import type { ReactNode } from "react";
 
-import type { ArchiveSectionDefinition } from "@/content/archive";
 import { CopyReveal } from "@/effects/primitives/CopyReveal";
+import type { ArchiveSectionDefinition } from "@/lib/content/types";
 
 type ArchiveSectionProps = Readonly<{
   definition: ArchiveSectionDefinition;
   revealEnabled: boolean;
   children?: ReactNode;
   className?: string;
+  status?: string;
 }>;
 
 export function ArchiveSection({
@@ -15,9 +16,11 @@ export function ArchiveSection({
   revealEnabled,
   children,
   className,
+  status,
 }: ArchiveSectionProps) {
   const headingId = definition.id + "-title";
   const rootClassName = ["archive-section", className].filter(Boolean).join(" ");
+  const sectionStatus = status ?? definition.status;
 
   return (
     <section
@@ -38,7 +41,7 @@ export function ArchiveSection({
             <CopyReveal enabled={revealEnabled} text={definition.summary} />
           </p>
           <p className="archive-section__status">
-            <CopyReveal enabled={revealEnabled} text={definition.status} />
+            <CopyReveal enabled={revealEnabled} text={sectionStatus} />
           </p>
         </header>
         {children}

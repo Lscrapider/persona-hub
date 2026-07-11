@@ -4,21 +4,22 @@ import { useEffect, useState } from "react";
 
 import {
   archiveSectionIds,
-  type ArchiveSectionId,
+  isActiveArchiveSectionId,
+  type ActiveArchiveSectionId,
 } from "@/content/archive";
 
 export function useActiveArchiveSection(enabled: boolean) {
   const [activeSectionId, setActiveSectionId] =
-    useState<ArchiveSectionId | null>(null);
+    useState<ActiveArchiveSectionId | null>(null);
 
   useEffect(() => {
     if (!enabled || typeof IntersectionObserver === "undefined") {
       return;
     }
 
-    const ratios = new Map<ArchiveSectionId, number>();
+    const ratios = new Map<ActiveArchiveSectionId, number>();
     const resolveActiveSection = () => {
-      let next: ArchiveSectionId | null = null;
+      let next: ActiveArchiveSectionId | null = null;
       let highestRatio = 0;
 
       for (const id of archiveSectionIds) {
@@ -35,9 +36,9 @@ export function useActiveArchiveSection(enabled: boolean) {
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          const id = entry.target.id as ArchiveSectionId;
+          const id = entry.target.id;
 
-          if (!archiveSectionIds.includes(id)) {
+          if (!isActiveArchiveSectionId(id)) {
             continue;
           }
 
