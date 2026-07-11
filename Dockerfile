@@ -10,7 +10,7 @@ FROM base AS dependencies
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 RUN pnpm install --frozen-lockfile
 
@@ -31,7 +31,7 @@ ENV NODE_ENV=production
 ENV PORT=5778
 ENV HOSTNAME=0.0.0.0
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/.next ./.next
