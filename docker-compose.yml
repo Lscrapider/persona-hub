@@ -7,3 +7,10 @@ services:
     ports:
       - "5778:5778"
     restart: unless-stopped
+    networks:
+      - database-common-network
+
+networks:
+  database-common-network:
+    external: true
+    name: database-common-network

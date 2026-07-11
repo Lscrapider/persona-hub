@@ -1,9 +1,9 @@
-FROM node:22-alpine AS base
+FROM node:22.18-bookworm-slim AS base
 
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+ENV CI=true
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
-RUN corepack enable
+RUN corepack enable && corepack prepare pnpm@11.5.2 --activate
 
 FROM base AS dependencies
 
