@@ -3,9 +3,10 @@ FROM node:22-alpine AS base
 ENV CI=true
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ENV COREPACK_NPM_REGISTRY=https://registry.npmmirror.com
-ENV NPM_CONFIG_REGISTRY=https://registry.npmmirror.com
 
-RUN corepack enable && corepack prepare pnpm@11.5.2 --activate
+RUN corepack enable \
+  && corepack prepare pnpm@11.5.2 --activate \
+  && printf 'registry=https://registry.npmmirror.com/\n' > /root/.npmrc
 
 FROM base AS dependencies
 
