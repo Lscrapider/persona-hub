@@ -34,6 +34,9 @@ export function CurrentIndex({
           <li className="current-index__item" key={item.id}>
             <a
               className="current-index__link"
+              data-runtime-activate-action="select"
+              data-runtime-hover-action="inspect"
+              data-runtime-target={`projects/${item.id}`}
               href={item.href}
               onClick={(event) => {
                 if (

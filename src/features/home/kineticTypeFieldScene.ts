@@ -4,15 +4,17 @@ const SURFACE_ARC_RADIUS_FACTOR = 0.74;
 const SURFACE_ENTRY_X_FACTOR = 0.398;
 const SURFACE_EXIT_Y_FACTOR = 1.1;
 
-const TRACK_COUNT = 38;
+const TRACK_COUNT = 40;
 const TRACK_RADIUS_MAX = 0.97;
 const TRACK_RADIUS_MIN = 0.16;
 const NON_BREAKING_SPACE = "\u00a0";
-const MIN_TRACK_FONT_SIZE = 7;
+const MIN_TRACK_FONT_SIZE = 14;
 const MAX_TRACK_FONT_SIZE = 18;
 const TRACK_FONT_SIZE_FACTOR = 0.018;
 const TRACK_FONT_RADIAL_CLEARANCE = 0.66;
 const TRACK_LETTER_SPACING = 4;
+export const KINETIC_OUTER_TRACK_FONT_SCALE = 1.18;
+export const KINETIC_INNER_TRACK_FONT_SCALE = 0.74;
 export const TRACK_TEXT_OPACITY = 0.9;
 const OUTER_TRACK_DURATION = 1200;
 const INNER_TRACK_DURATION = 350;
@@ -87,8 +89,13 @@ export type KineticGlyphInstance = Readonly<{
 }>;
 
 export type KineticSceneLayout = Readonly<{
+  atlasFontSize: number;
   baseFontSize: number;
   glyphs: readonly KineticGlyphInstance[];
+  radiusRange: Readonly<{
+    inner: number;
+    outer: number;
+  }>;
   surface: KineticSurfaceGeometry;
 }>;
 
@@ -122,15 +129,6 @@ type TextLayout = Readonly<{
   tracks: OrbitGlyphLayout[];
 }>;
 
-export type KineticFrame = Readonly<{
-  elapsed: number;
-  fontFamily: string;
-  mode: "full" | "static";
-  palette: KineticPalette;
-  pixelRatio: number;
-  pointer: KineticPointer | null;
-}>;
-
 let cachedGeometry: SceneGeometry | null = null;
 let cachedTextLayout: TextLayout | null = null;
 
@@ -156,8 +154,22 @@ function isIntermittentTrack(index: number) {
   return INTERMITTENT_TRACK_INDICES.has(index);
 }
 
+function reverseWordPlacement(source: string) {
+  return source
+    .split(/(\s+)/)
+    .map((segment) =>
+      /\s/.test(segment) ? segment : Array.from(segment).reverse().join(""),
+    )
+    .join("");
+}
+
 function createContinuousTrackCopy(source: string) {
-  return source.split(" · ").join(NON_BREAKING_SPACE) + NON_BREAKING_SPACE;
+  return (
+    source
+      .split(" · ")
+      .map(reverseWordPlacement)
+      .join(NON_BREAKING_SPACE) + NON_BREAKING_SPACE
+  );
 }
 
 function createConnectedGap(cellCount: number) {
@@ -165,7 +177,7 @@ function createConnectedGap(cellCount: number) {
 }
 
 function createIntermittentTrackCopy(source: string, index: number) {
-  const phrases = source.split(" · ");
+  const phrases = source.split(" · ").map(reverseWordPlacement);
   const random = createSeededRandom(Math.imul(index + 1, 0x9e3779b9));
   const segmentCount = 6 + Math.floor(random() * 2);
   let phraseCursor = Math.floor(random() * phrases.length);
@@ -270,66 +282,6 @@ function getSceneGeometry(bounds: SceneBounds): SceneGeometry {
   return cachedGeometry;
 }
 
-function traceSurface(context: CanvasRenderingContext2D, geometry: SceneGeometry) {
-  const { bounds, surfaceArc } = geometry;
-
-  context.beginPath();
-  context.moveTo(surfaceArc.startX, 0);
-  context.arc(
-    surfaceArc.centerX,
-    surfaceArc.centerY,
-    surfaceArc.radius,
-    surfaceArc.startAngle,
-    surfaceArc.endAngle,
-    true,
-  );
-  context.lineTo(bounds.width, 0);
-  context.closePath();
-}
-
-function isInsidePointerMask(
-  pointer: KineticPointer | null,
-  x: number,
-  y: number,
-) {
-  if (!pointer?.active) {
-    return false;
-  }
-
-  const deltaX = x - pointer.x;
-  const deltaY = y - pointer.y;
-
-  return deltaX * deltaX + deltaY * deltaY <= pointer.radius * pointer.radius;
-}
-
-function isInsideViewport(
-  bounds: SceneBounds,
-  x: number,
-  y: number,
-  margin: number,
-) {
-  return (
-    x >= -margin &&
-    x <= bounds.width + margin &&
-    y >= -margin &&
-    y <= bounds.height + margin
-  );
-}
-
-function isInsideSurface(
-  geometry: SceneGeometry,
-  x: number,
-  y: number,
-  margin: number,
-) {
-  const { centerX, centerY, radius } = geometry.surfaceArc;
-  const deltaX = x - centerX;
-  const deltaY = y - centerY;
-  const boundedRadius = radius + margin;
-
-  return deltaX * deltaX + deltaY * deltaY <= boundedRadius * boundedRadius;
-}
-
 function isDrawableCharacter(character: string) {
   return character !== NON_BREAKING_SPACE && character !== " ";
 }
@@ -386,7 +338,7 @@ function getTextLayout(
     const glyphs: OrbitGlyph[] = [];
     const { radius, track } = orbit;
     const candidateSeamCharacters = Array.from(
-      NON_BREAKING_SPACE + track.seamConnector,
+      NON_BREAKING_SPACE + reverseWordPlacement(track.seamConnector),
     );
     const candidateSeamAdvance = candidateSeamCharacters.reduce(
       (total, character) => total + getAngularAdvance(character, radius),
@@ -479,77 +431,16 @@ export function getKineticSceneLayout(
   );
 
   return {
+    atlasFontSize: baseFontSize * KINETIC_OUTER_TRACK_FONT_SCALE,
     baseFontSize,
     glyphs,
+    radiusRange: {
+      inner: geometry.orbits.at(-1)?.radius ?? 0,
+      outer: geometry.orbits[0]?.radius ?? 0,
+    },
     surface: geometry.surfaceArc,
   };
 }
-
-function drawTrackText(
-  context: CanvasRenderingContext2D,
-  layout: OrbitGlyphLayout,
-  geometry: SceneGeometry,
-  frame: KineticFrame,
-  viewportMargin: number,
-) {
-  const { glyphs, orbit } = layout;
-  const { radius, track } = orbit;
-  const { centerX, centerY } = geometry.surfaceArc;
-  const elapsedTurns = (frame.elapsed / 1000 / track.duration) * TAU;
-  const startAngle = track.phase + track.direction * elapsedTurns;
-  const startCosine = Math.cos(startAngle);
-  const startSine = Math.sin(startAngle);
-
-  for (const glyph of glyphs) {
-    if (!isDrawableCharacter(glyph.character)) {
-      continue;
-    }
-
-    const isConnector = isConnectorCharacter(glyph.character);
-    const cosine =
-      startCosine * glyph.cosine - startSine * glyph.sine;
-    const sine = startSine * glyph.cosine + startCosine * glyph.sine;
-    const x = centerX + cosine * radius;
-    const y = centerY + sine * radius;
-
-    if (!isInsideViewport(geometry.bounds, x, y, viewportMargin)) {
-      continue;
-    }
-
-    if (!isInsideSurface(geometry, x, y, viewportMargin)) {
-      continue;
-    }
-
-    const isPointerMaskedText =
-      !isConnector && isInsidePointerMask(frame.pointer, x, y);
-    const tangentCosine = -sine;
-    const tangentSine = cosine;
-
-    context.setTransform(
-      frame.pixelRatio * tangentCosine,
-      frame.pixelRatio * tangentSine,
-      -frame.pixelRatio * tangentSine,
-      frame.pixelRatio * tangentCosine,
-      frame.pixelRatio * x,
-      frame.pixelRatio * y,
-    );
-    const character = isPointerMaskedText ? "·" : glyph.character;
-    const opacity = isConnector
-      ? CONNECTOR_DOT_OPACITY
-      : isPointerMaskedText
-        ? POINTER_DOT_OPACITY
-        : TRACK_TEXT_OPACITY;
-
-    if (opacity !== TRACK_TEXT_OPACITY) {
-      context.globalAlpha = opacity;
-    }
-    context.fillText(character, 0, 0);
-    if (opacity !== TRACK_TEXT_OPACITY) {
-      context.globalAlpha = TRACK_TEXT_OPACITY;
-    }
-  }
-}
-
 function getBaseTrackFontSize(geometry: SceneGeometry) {
   const preferredFontSize = clamp(
     Math.min(geometry.bounds.width, geometry.bounds.height) *
@@ -573,66 +464,6 @@ function getBaseTrackFontSize(geometry: SceneGeometry) {
   );
 }
 
-function drawTracks(
-  context: CanvasRenderingContext2D,
-  geometry: SceneGeometry,
-  frame: KineticFrame,
-) {
-  const baseFontSize = getBaseTrackFontSize(geometry);
-
-  context.fillStyle = frame.palette.bone;
-  context.font = getKineticTrackFont(baseFontSize, frame.fontFamily);
-  context.globalAlpha = TRACK_TEXT_OPACITY;
-  context.textAlign = "center";
-  context.textBaseline = "middle";
-
-  const layout = getTextLayout(
-    context,
-    geometry,
-    baseFontSize,
-    frame.fontFamily,
-    TRACK_LETTER_SPACING,
-  );
-
-  for (const track of layout.tracks) {
-    drawTrackText(
-      context,
-      track,
-      geometry,
-      frame,
-      baseFontSize * 0.78,
-    );
-  }
-
-  context.setTransform(
-    frame.pixelRatio,
-    0,
-    0,
-    frame.pixelRatio,
-    0,
-    0,
-  );
-}
-
 export function getKineticPointerRadius(bounds: SceneBounds) {
   return clamp(Math.min(bounds.width, bounds.height) * 0.14, 88, 176);
-}
-
-export function drawKineticTypeFieldFrame(
-  context: CanvasRenderingContext2D,
-  bounds: SceneBounds,
-  frame: KineticFrame,
-) {
-  const geometry = getSceneGeometry(bounds);
-
-  context.clearRect(0, 0, bounds.width, bounds.height);
-  context.fillStyle = frame.palette.void;
-  traceSurface(context, geometry);
-  context.fill();
-
-  context.save();
-  traceSurface(context, geometry);
-  context.clip();
-  drawTracks(context, geometry, frame);
-  context.restore();
 }

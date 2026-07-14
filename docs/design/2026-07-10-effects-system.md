@@ -1,7 +1,7 @@
 # Scra Atlas effects system
 
 **Status:** current
-**Updated:** 2026-07-11
+**Updated:** 2026-07-14
 
 ## Purpose
 
@@ -9,6 +9,9 @@ Effects express archive entry, locating, reading, and transfer. They are not gen
 
 ## Page-level motion grammar
 
+- Compile: normal scrolling moves real sections through `queued → resolving → mounted → stable`; two observer bands support both directions and ensure at most one mounted section.
+- Inspect: pointer hover and native focus identify real `data-runtime-target` paths without introducing interaction-only controls.
+- Trace: one short, deduplicated Build Trace reports a real resolve, mount, inspect, open, toggle, select, pin, or read action, then clears itself.
 - Resolve: a reader-facing label becomes legible once when it first enters view.
 - Locate: a focused link, current section, or route uses the terracotta signal.
 - Transfer: native fragment navigation moves the reader without scroll hijacking.
@@ -45,15 +48,22 @@ Text-track motion pauses when the Hero leaves the viewport or the document is hi
 
 ## Archive feature effects
 
+`ArchiveRuntime` sits between HomeExperience and the feature sections. Its prewarm and centre `IntersectionObserver` bands drive the compiler grammar without a global window scroll listener. Delegated pointer, focus, and activation events consume feature-owned runtime metadata. Pointer coordinates are coalesced into one animation frame and written only as CSS custom properties, not React state. The resulting probe and Build Trace are decorative, `pointer-events: none`, and `aria-hidden`; the trace is not a terminal or required status surface.
+
 Timeline keeps every milestone in semantic DOM. An aria-hidden SVG trace aligns to
 the responsive rail, draws once when its group becomes visible in FULL, and is
 complete immediately in STATIC. IntersectionObserver selects the focal record;
 the marker buttons remain keyboard-operable and do not depend on scrolling.
+Runtime targets identify the real record and marker. Hover or focus can pulse the
+local marker and SVG path, while activation continues to pin the existing record
+state rather than inventing a second selection model.
 
 Projects uses DOM/CSS/SVG state because project selection and recursive system
 tree expansion are reader-facing controls. The explorer never hides project
 labels, and native `details` / `summary` branches preserve keyboard expansion
-without an emulated ARIA tree.
+without an emulated ARIA tree. Stable project and recursive node paths power the
+probe feedback; CSS `:has()` may illuminate a hovered or focused node's real
+ancestor path without making decorative leaves focusable.
 
 Logs renders its list, metadata, and selected Markdown article in semantic DOM.
 Its only visual enhancement is the bounded, aria-hidden Canvas 2D
@@ -63,14 +73,17 @@ logs, terminal output, or required content. `ResizeObserver`, pointer activity,
 and section/document visibility can request one redraw at a time. FULL may run
 a short entrance composition, STATIC draws a deterministic final frame, and
 there is no permanent requestAnimationFrame loop. If Canvas is unavailable,
-the foreground reader remains complete.
+the foreground reader remains complete. A passive scroll listener is attached
+only to the bounded reader. It schedules one frame that writes
+`--logs-read-progress`, while a reader-rooted observer assigns stable phases to
+real `logs/{id}/block-NN` elements and emits discrete read signals.
 
 ## Modes
 
 The system has exactly two modes:
 
-- FULL: one-time CopyReveal, the two continuous Hero effects, a one-time Timeline trace draw, and only bounded active Logs-word-field work.
-- STATIC: final copy, final Hero frame, complete Timeline trace, and a deterministic Logs word-field frame when its visible field is rendered, with no visual animation.
+- FULL: one-time CopyReveal, the two continuous Hero effects, section compiler transitions, a fine-pointer probe, a one-time Timeline trace draw, and only bounded active Logs-word-field or reader-progress work.
+- STATIC: final copy, final Hero frame, complete Timeline trace, final compiler states, and a deterministic Logs word-field frame when its visible field is rendered, with no displacement, pulse, probe, or visual animation.
 
 System reduced motion starts in STATIC. A user can choose and persist FULL. The runtime, root dataset, and CSS all respect that explicit choice. No third or intermediate effect mode exists.
 
@@ -86,8 +99,10 @@ The Hero's Canvas scene is aria-hidden and has a non-empty static fallback. The 
 - Content records do not import effects.
 - Feature sections own semantic structure.
 - Shared primitives do not import archive records.
-- HomeExperience composes Hero → Timeline → Projects → Logs and forwards typed data instead of parsing Markdown or accessing files.
-- IntersectionObserver drives Timeline focus, archive visibility, and active-section state. No scroll loop, scroll snap, Lenis, or scroll hijacking is allowed.
+- HomeExperience composes Hero → Timeline → Projects → Logs and forwards typed data instead of parsing Markdown or accessing files. ArchiveRuntime wraps that composition but does not own feature state.
+- IntersectionObserver drives Timeline focus, archive visibility, active-section state, compiler bands, and Logs block phases. No global scroll loop, scroll snap, Lenis, or scroll hijacking is allowed.
+- The Hero remains the only permanent rAF scene. Runtime pointer writes and bounded Logs progress updates schedule at most one frame per input burst and cancel it during cleanup.
+- Locale remounts, mode changes, EntryGate relocking, document visibility changes, and unmounts must remove all runtime timers, observers, listeners, and pending frames.
 
 ## Aesthetic checks
 

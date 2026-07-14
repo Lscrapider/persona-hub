@@ -3,29 +3,28 @@
 import { type PointerEvent, useEffect, useRef, useState } from "react";
 
 import { type EffectMode } from "@/core/effect-mode";
+import {
+  isPhysicalInteractionSignal,
+  PHYSICAL_CANCEL_REQUEST_EVENT,
+  PHYSICAL_INTERACTION_EVENT,
+} from "@/effects/physics/physicalInteractionContract";
 import { useEffectMode } from "@/effects/runtime/EffectMode";
 import {
-  drawKineticTypeFieldFrame,
+  createHeroPhysicsAdapter,
+  type HeroPhysicsAdapter,
+} from "@/features/home/heroPhysicsAdapter";
+import {
   getKineticPointerRadius,
   INITIAL_SCENE_BOUNDS,
   invalidateKineticTypeFieldTextLayout,
   type KineticPalette,
   type KineticPointer,
   type SceneBounds,
-} from "@/features/home/kineticTypeFieldRenderer";
+} from "@/features/home/kineticTypeFieldScene";
 import { createKineticWebglRenderer } from "@/features/home/kineticTypeFieldWebglRenderer";
 
-const MAX_ANIMATED_PIXEL_RATIO = 1.25;
-const MAX_STATIC_PIXEL_RATIO = 2;
-const FULL_FRAME_INTERVAL_MS = 1000 / 30;
-const FULL_FRAME_INTERVAL_MARGIN_MS = 1;
+const MAX_WEBGL_PIXEL_RATIO = 1.25;
 const STATIC_FRAME_ELAPSED = 96_000;
-const EMPTY_POINTER: KineticPointer = {
-  active: false,
-  radius: 0,
-  x: 0,
-  y: 0,
-};
 
 type KineticTypeFieldProps = Readonly<{
   active: boolean;
@@ -33,16 +32,21 @@ type KineticTypeFieldProps = Readonly<{
 
 type OrbitFieldProps = Readonly<{
   active: boolean;
-  fallback?: boolean;
   mode: EffectMode;
 }>;
 
-type PendingPointer = Readonly<{
+type MutablePointer = {
+  active: boolean;
+  radius: number;
+  x: number;
+  y: number;
+};
+
+type PendingPointer = {
+  active: boolean;
   clientX: number;
   clientY: number;
-}>;
-
-type RendererKind = "canvas" | "webgl";
+};
 
 function toSceneBounds(width: number, height: number): SceneBounds {
   return {
@@ -91,8 +95,8 @@ function useResponsiveSceneBounds() {
   return { bounds, sceneRef };
 }
 
-function readPalette(canvas: HTMLCanvasElement): KineticPalette {
-  const style = window.getComputedStyle(canvas);
+function readPalette(element: HTMLElement): KineticPalette {
+  const style = window.getComputedStyle(element);
 
   return {
     bone: style.getPropertyValue("--color-bone").trim() || "#F7F1E9",
@@ -100,52 +104,76 @@ function readPalette(canvas: HTMLCanvasElement): KineticPalette {
   };
 }
 
-function getCanvasPixelRatio(pixelRatioCap: number) {
+function getWebglPixelRatio() {
   return Math.min(
     Math.max(window.devicePixelRatio || 1, 1),
-    pixelRatioCap,
+    MAX_WEBGL_PIXEL_RATIO,
   );
 }
 
-function configureCanvas(
-  canvas: HTMLCanvasElement,
-  bounds: SceneBounds,
-  pixelRatioCap: number,
-) {
-  const pixelRatio = getCanvasPixelRatio(pixelRatioCap);
-  const width = Math.max(1, Math.round(bounds.width * pixelRatio));
-  const height = Math.max(1, Math.round(bounds.height * pixelRatio));
-
-  if (canvas.width !== width || canvas.height !== height) {
-    canvas.width = width;
-    canvas.height = height;
-  }
-
-  const context = canvas.getContext("2d");
-
-  if (!context) {
-    return null;
-  }
-
-  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-
-  return { context, pixelRatio };
-}
-
-function OrbitField({ active, fallback = false, mode }: OrbitFieldProps) {
+function OrbitField({ active, mode }: OrbitFieldProps) {
   const webglCanvasRef = useRef<HTMLCanvasElement>(null);
-  const canvasFallbackRef = useRef<HTMLCanvasElement>(null);
   const elapsedRef = useRef(0);
-  const pointerRef = useRef<KineticPointer>(EMPTY_POINTER);
-  const pendingPointerRef = useRef<PendingPointer | null>(null);
+  const pointerRef = useRef<MutablePointer>({
+    active: false,
+    radius: 0,
+    x: 0,
+    y: 0,
+  });
+  const pendingPointerRef = useRef<PendingPointer>({
+    active: false,
+    clientX: 0,
+    clientY: 0,
+  });
   const pointerFrameRef = useRef(0);
-  const forceCanvasFallbackRef = useRef(false);
+  const adapterRef = useRef<HeroPhysicsAdapter | null>(null);
   const [fontEpoch, setFontEpoch] = useState(0);
-  const [rendererEpoch, setRendererEpoch] = useState(0);
-  const [rendererKind, setRendererKind] = useState<RendererKind>("canvas");
+  const [isRendererReady, setIsRendererReady] = useState(false);
   const [isUnavailable, setIsUnavailable] = useState(false);
   const { bounds, sceneRef } = useResponsiveSceneBounds();
-  const isInteractive = active && mode === "full" && !fallback;
+  const shouldAnimate = active && mode === "full";
+  const isInteractive = shouldAnimate && isRendererReady && !isUnavailable;
+
+  useEffect(() => {
+    const adapter = createHeroPhysicsAdapter(INITIAL_SCENE_BOUNDS);
+
+    adapterRef.current = adapter;
+
+    const resetScene = () => {
+      const scene = sceneRef.current;
+
+      scene?.dispatchEvent(
+        new CustomEvent(PHYSICAL_CANCEL_REQUEST_EVENT, { bubbles: true }),
+      );
+      adapter.reset();
+      pendingPointerRef.current.active = false;
+      pointerRef.current.active = false;
+
+      if (pointerFrameRef.current) {
+        window.cancelAnimationFrame(pointerFrameRef.current);
+        pointerFrameRef.current = 0;
+      }
+    };
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        resetScene();
+      }
+    };
+
+    window.addEventListener("blur", resetScene);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      resetScene();
+      window.removeEventListener("blur", resetScene);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      adapterRef.current = null;
+    };
+  }, [sceneRef]);
+
+  useEffect(() => {
+    adapterRef.current?.resize(bounds);
+  }, [bounds]);
 
   useEffect(() => {
     if (!("fonts" in document)) {
@@ -171,150 +199,133 @@ function OrbitField({ active, fallback = false, mode }: OrbitFieldProps) {
     return () => {
       if (pointerFrameRef.current) {
         window.cancelAnimationFrame(pointerFrameRef.current);
+        pointerFrameRef.current = 0;
       }
     };
   }, []);
 
   useEffect(() => {
     if (!isInteractive) {
-      pendingPointerRef.current = null;
-      pointerRef.current = EMPTY_POINTER;
+      const scene = sceneRef.current;
+
+      scene?.dispatchEvent(
+        new CustomEvent(PHYSICAL_CANCEL_REQUEST_EVENT, { bubbles: true }),
+      );
+      adapterRef.current?.reset();
+      pendingPointerRef.current.active = false;
+      pointerRef.current.active = false;
+
+      if (pointerFrameRef.current) {
+        window.cancelAnimationFrame(pointerFrameRef.current);
+        pointerFrameRef.current = 0;
+      }
     }
-  }, [isInteractive]);
+  }, [isInteractive, sceneRef]);
 
   useEffect(() => {
-    const fallbackCanvas = canvasFallbackRef.current;
+    const scene = sceneRef.current;
+    const adapter = adapterRef.current;
 
-    if (!fallbackCanvas) {
+    if (!scene || !adapter) {
       return;
     }
 
-    const drawCanvasScene = () => {
-      const configuredCanvas = configureCanvas(
-        fallbackCanvas,
-        bounds,
-        isInteractive ? MAX_ANIMATED_PIXEL_RATIO : MAX_STATIC_PIXEL_RATIO,
-      );
+    const handlePhysicalSignal = (event: Event) => {
+      const signal = (event as CustomEvent<unknown>).detail;
 
-      if (!configuredCanvas) {
-        setIsUnavailable(true);
-        return null;
-      }
-
-      const { context, pixelRatio } = configuredCanvas;
-      const palette = readPalette(fallbackCanvas);
-      const fontFamily = window.getComputedStyle(fallbackCanvas).fontFamily;
-      const drawFrame = (elapsed: number) => {
-        drawKineticTypeFieldFrame(context, bounds, {
-          elapsed,
-          fontFamily: fontFamily || "ui-monospace, monospace",
-          mode,
-          palette,
-          pixelRatio,
-          pointer: isInteractive ? pointerRef.current : null,
-        });
-      };
-
-      return drawFrame;
-    };
-
-    if (!isInteractive) {
-      const drawFrame = drawCanvasScene();
-
-      if (!drawFrame) {
+      if (
+        !isInteractive ||
+        !isPhysicalInteractionSignal(signal) ||
+        signal.surface !== "index"
+      ) {
         return;
       }
 
-      setIsUnavailable(false);
-      setRendererKind("canvas");
-      drawFrame(STATIC_FRAME_ELAPSED);
+      adapter.applySignal(signal, scene.getBoundingClientRect(), bounds);
+    };
+
+    scene.addEventListener(PHYSICAL_INTERACTION_EVENT, handlePhysicalSignal);
+
+    return () => {
+      scene.removeEventListener(PHYSICAL_INTERACTION_EVENT, handlePhysicalSignal);
+    };
+  }, [bounds, isInteractive, sceneRef]);
+
+  useEffect(() => {
+    if (isUnavailable) {
       return;
     }
 
-    const webglCanvas = webglCanvasRef.current;
+    const canvas = webglCanvasRef.current;
 
-    if (!forceCanvasFallbackRef.current && webglCanvas) {
-      const pixelRatio = getCanvasPixelRatio(MAX_ANIMATED_PIXEL_RATIO);
-      const palette = readPalette(webglCanvas);
-      const fontFamily = window.getComputedStyle(webglCanvas).fontFamily;
-      const renderer = createKineticWebglRenderer(webglCanvas, {
-        bounds,
-        fontFamily: fontFamily || "ui-monospace, monospace",
-        onContextLost: () => {
-          forceCanvasFallbackRef.current = true;
-          setRendererKind("canvas");
-          setRendererEpoch((currentEpoch) => currentEpoch + 1);
-        },
-        pixelRatio,
+    if (!canvas) {
+      return;
+    }
+
+    setIsRendererReady(false);
+
+    const renderer = createKineticWebglRenderer(canvas, {
+      bounds,
+      fontFamily:
+        window.getComputedStyle(canvas).fontFamily || "ui-monospace, monospace",
+      onContextLost: () => {
+        setIsRendererReady(false);
+        setIsUnavailable(true);
+      },
+      pixelRatio: getWebglPixelRatio(),
+    });
+
+    if (!renderer) {
+      setIsUnavailable(true);
+      return;
+    }
+
+    const palette = readPalette(canvas);
+    const adapter = adapterRef.current;
+
+    setIsRendererReady(true);
+
+    if (!shouldAnimate) {
+      renderer.render({
+        elapsed: STATIC_FRAME_ELAPSED,
+        palette,
+        physics: null,
+        pointer: null,
       });
 
-      if (renderer) {
-        setIsUnavailable(false);
-        setRendererKind("webgl");
-
-        const startedAt = window.performance.now();
-        let animationFrame = 0;
-        const render = (now: number) => {
-          renderer.render({
-            elapsed: elapsedRef.current + now - startedAt,
-            palette,
-            pointer: pointerRef.current,
-          });
-          animationFrame = window.requestAnimationFrame(render);
-        };
-
-        renderer.render({
-          elapsed: elapsedRef.current,
-          palette,
-          pointer: pointerRef.current,
-        });
-        animationFrame = window.requestAnimationFrame(render);
-
-        return () => {
-          elapsedRef.current += Math.max(
-            0,
-            window.performance.now() - startedAt,
-          );
-          window.cancelAnimationFrame(animationFrame);
-          renderer.destroy();
-        };
-      }
-
-      forceCanvasFallbackRef.current = true;
+      return () => {
+        renderer.destroy();
+      };
     }
-
-    const drawFrame = drawCanvasScene();
-
-    if (!drawFrame) {
-      return;
-    }
-
-    setIsUnavailable(false);
-    setRendererKind("canvas");
 
     const startedAt = window.performance.now();
+    const webglFrame = {
+      elapsed: elapsedRef.current,
+      palette,
+      physics: adapter?.frame ?? null,
+      pointer: pointerRef.current as KineticPointer,
+    };
     let animationFrame = 0;
-    let lastDrawAt = startedAt;
     const render = (now: number) => {
-      if (
-        now - lastDrawAt >=
-        FULL_FRAME_INTERVAL_MS - FULL_FRAME_INTERVAL_MARGIN_MS
-      ) {
-        drawFrame(elapsedRef.current + now - startedAt);
-        lastDrawAt = now;
-      }
+      const currentAdapter = adapterRef.current;
 
+      currentAdapter?.advance(now);
+      webglFrame.elapsed = elapsedRef.current + now - startedAt;
+      webglFrame.physics = currentAdapter?.frame ?? null;
+      renderer.render(webglFrame);
       animationFrame = window.requestAnimationFrame(render);
     };
 
-    drawFrame(elapsedRef.current);
+    adapter?.advance(startedAt);
+    renderer.render(webglFrame);
     animationFrame = window.requestAnimationFrame(render);
 
     return () => {
       elapsedRef.current += Math.max(0, window.performance.now() - startedAt);
       window.cancelAnimationFrame(animationFrame);
+      renderer.destroy();
     };
-  }, [bounds, fontEpoch, isInteractive, mode, rendererEpoch]);
+  }, [bounds, fontEpoch, isUnavailable, shouldAnimate]);
 
   const commitPointerPosition = () => {
     pointerFrameRef.current = 0;
@@ -322,29 +333,29 @@ function OrbitField({ active, fallback = false, mode }: OrbitFieldProps) {
     const pendingPointer = pendingPointerRef.current;
     const scene = sceneRef.current;
 
-    if (!isInteractive || !pendingPointer || !scene) {
-      pointerRef.current = EMPTY_POINTER;
+    if (!isInteractive || !pendingPointer.active || !scene) {
+      pointerRef.current.active = false;
       return;
     }
 
     const rect = scene.getBoundingClientRect();
 
     if (!rect.width || !rect.height) {
-      pointerRef.current = EMPTY_POINTER;
+      pointerRef.current.active = false;
       return;
     }
 
-    pointerRef.current = {
-      active: true,
-      radius: getKineticPointerRadius(bounds),
-      x: ((pendingPointer.clientX - rect.left) / rect.width) * bounds.width,
-      y: ((pendingPointer.clientY - rect.top) / rect.height) * bounds.height,
-    };
+    pointerRef.current.active = true;
+    pointerRef.current.radius = getKineticPointerRadius(bounds);
+    pointerRef.current.x =
+      ((pendingPointer.clientX - rect.left) / rect.width) * bounds.width;
+    pointerRef.current.y =
+      ((pendingPointer.clientY - rect.top) / rect.height) * bounds.height;
   };
 
   const clearPointer = () => {
-    pendingPointerRef.current = null;
-    pointerRef.current = EMPTY_POINTER;
+    pendingPointerRef.current.active = false;
+    pointerRef.current.active = false;
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -352,10 +363,9 @@ function OrbitField({ active, fallback = false, mode }: OrbitFieldProps) {
       return;
     }
 
-    pendingPointerRef.current = {
-      clientX: event.clientX,
-      clientY: event.clientY,
-    };
+    pendingPointerRef.current.active = true;
+    pendingPointerRef.current.clientX = event.clientX;
+    pendingPointerRef.current.clientY = event.clientY;
 
     if (!pointerFrameRef.current) {
       pointerFrameRef.current = window.requestAnimationFrame(
@@ -364,48 +374,41 @@ function OrbitField({ active, fallback = false, mode }: OrbitFieldProps) {
     }
   };
 
-  if (isUnavailable) {
-    return (
-      <div
-        aria-hidden="true"
-        className="kinetic-field kinetic-field--unavailable"
-        ref={sceneRef}
-      />
-    );
-  }
-
   return (
     <div
       aria-hidden="true"
-      className="kinetic-field"
+      className={
+        isUnavailable
+          ? "kinetic-field kinetic-field--unavailable"
+          : "kinetic-field"
+      }
       data-active={active || undefined}
       data-interactive={isInteractive || undefined}
       data-mode={mode}
-      data-renderer={rendererKind}
-      onPointerLeave={clearPointer}
-      onPointerMove={handlePointerMove}
+      data-physics-surface={isInteractive ? "index" : undefined}
+      data-physics-target={isInteractive ? "index" : undefined}
+      onPointerLeave={isInteractive ? clearPointer : undefined}
+      onPointerMove={isInteractive ? handlePointerMove : undefined}
       ref={sceneRef}
     >
-      <canvas
-        aria-hidden="true"
-        className="kinetic-field__canvas kinetic-field__canvas--fallback"
-        ref={canvasFallbackRef}
-      />
-      <canvas
-        aria-hidden="true"
-        className="kinetic-field__canvas kinetic-field__canvas--webgl"
-        ref={webglCanvasRef}
-      />
+      {!isUnavailable ? (
+        <canvas
+          aria-hidden="true"
+          className="kinetic-field__canvas"
+          ref={webglCanvasRef}
+        />
+      ) : null}
     </div>
   );
 }
 
 export function KineticTypeField({ active }: KineticTypeFieldProps) {
-  const { mode } = useEffectMode();
+  const { mode, systemReduced } = useEffectMode();
+  const effectiveMode = systemReduced ? "static" : mode;
 
-  return <OrbitField active={active} mode={mode} />;
+  return <OrbitField active={active} mode={effectiveMode} />;
 }
 
 export function KineticTypeFieldFallback() {
-  return <OrbitField active={false} fallback mode="static" />;
+  return <div aria-hidden="true" className="kinetic-field kinetic-field--unavailable" />;
 }

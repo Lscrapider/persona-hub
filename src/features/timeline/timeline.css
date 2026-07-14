@@ -87,12 +87,44 @@
   fill: none;
   stroke: color-mix(in oklch, var(--color-ink) 30%, transparent);
   stroke-dasharray: 1;
-  stroke-dashoffset: 1;
+  stroke-dashoffset: 0;
   stroke-width: 1px;
+  transform: scaleY(var(--compile-line-scale));
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform var(--duration-compile) var(--ease-out);
 }
 
-.timeline-rail[data-trace-state="drawing"] .timeline-rail__trace-path {
-  animation: timeline-trace-draw var(--duration-ritual) var(--ease-out) both;
+.timeline-rail__compile-path {
+  fill: none;
+  stroke: var(--color-signal);
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  stroke-width: 1px;
+  opacity: 0;
+}
+
+.timeline-rail__probe-path {
+  fill: none;
+  stroke: var(--color-signal);
+  stroke-dasharray: 0.08 0.92;
+  stroke-dashoffset: 1;
+  stroke-width: 1px;
+  opacity: 0;
+}
+
+html[data-effect-mode="full"]
+  .archive-experience[data-runtime-ready]
+  .timeline-section[data-compiler-phase="mounted"]
+  .timeline-rail__compile-path {
+  animation: archive-compile-seam 320ms var(--ease-out) both;
+}
+
+.timeline-rail:has(
+    .timeline-rail__marker:is(:hover, :focus-visible)
+  ) .timeline-rail__probe-path {
+  animation: timeline-probe-pulse var(--duration-scene) linear both;
+  opacity: 0.72;
 }
 
 .timeline-rail__records {
@@ -110,12 +142,20 @@
 }
 
 .timeline-rail__record {
+  --timeline-settle-x: 12px;
+  --timeline-compile-x: var(--compile-offset);
+
   position: relative;
   display: grid;
   min-block-size: clamp(6.25rem, 7.75vw, 8rem);
   grid-template-columns: minmax(0, 1fr) var(--size-touch) minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   column-gap: clamp(1rem, 4vw, 4.5rem);
+}
+
+.timeline-rail__record[data-side="left"] {
+  --timeline-settle-x: -12px;
+  --timeline-compile-x: calc(var(--compile-offset) * -1);
 }
 
 .timeline-rail__marker {
@@ -170,8 +210,21 @@
   transform: translate(-50%, -50%) scale(1);
 }
 
+html[data-effect-mode="full"]
+  .archive-experience[data-runtime-ready]
+  .timeline-section[data-compiler-phase="mounted"]
+  .timeline-rail__record[data-active]
+  .timeline-rail__marker::after {
+  animation: timeline-marker-pressure 320ms var(--ease-out) both;
+}
+
 .timeline-rail__marker:is(:hover, :focus-visible) {
   border-color: var(--color-focus);
+  transform: scale(1.08);
+}
+
+.timeline-rail__record:is(:hover, :focus-within) .timeline-rail__marker {
+  border-color: var(--color-signal);
   transform: scale(1.08);
 }
 
@@ -209,6 +262,11 @@
 .timeline-rail__period,
 .timeline-rail__details {
   min-inline-size: 0;
+  opacity: var(--compile-local-opacity);
+  transform: translateX(var(--timeline-compile-x));
+  transition:
+    opacity var(--duration-compile) var(--ease-out),
+    transform var(--duration-compile) var(--ease-out);
 }
 
 .timeline-rail__period {
@@ -325,9 +383,102 @@
   justify-items: end;
 }
 
-html[data-effect-mode="static"] .timeline-rail__trace-path {
+@keyframes timeline-rail-establish {
+  from {
+    transform: scaleY(0.12);
+  }
+
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes timeline-record-settle {
+  from {
+    opacity: 0.88;
+    transform: translateX(var(--timeline-settle-x));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes timeline-marker-pressure {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  42% {
+    opacity: 0.72;
+    transform: translate(-50%, -50%) scale(1.45);
+  }
+}
+
+@keyframes timeline-probe-pulse {
+  from {
+    stroke-dashoffset: 1;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .timeline-rail {
+    view-timeline-name: --timeline-rail;
+    view-timeline-axis: block;
+  }
+
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .timeline-rail__trace-path {
+    animation: timeline-rail-establish linear both;
+    animation-duration: auto;
+    animation-timeline: --timeline-rail;
+    animation-range: entry 0% cover 45%;
+    transition: none;
+  }
+
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .timeline-rail__record {
+    view-timeline-name: --timeline-record;
+    view-timeline-axis: block;
+  }
+
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .timeline-rail__period,
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .timeline-rail__details {
+    animation: timeline-record-settle linear both;
+    animation-duration: auto;
+    animation-timeline: --timeline-record;
+    animation-range: entry 10% cover 38%;
+    transition: none;
+  }
+}
+
+html[data-effect-mode="static"] .timeline-rail__trace-path,
+html[data-effect-mode="static"] .timeline-rail__period,
+html[data-effect-mode="static"] .timeline-rail__details {
   animation: none;
-  stroke-dashoffset: 0;
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+html[data-effect-mode="static"] .timeline-rail__compile-path,
+html[data-effect-mode="static"] .timeline-rail__marker::after {
+  animation: none;
 }
 
 html[data-effect-mode="static"] .timeline-rail__marker,
@@ -335,9 +486,48 @@ html[data-effect-mode="static"] .timeline-rail__marker::after {
   transition: none;
 }
 
-@keyframes timeline-trace-draw {
-  to {
-    stroke-dashoffset: 0;
+html[data-effect-mode="static"] .timeline-rail__probe-path {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .timeline-section[data-compiler-phase]
+    .timeline-rail__trace-path,
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .timeline-section[data-compiler-phase]
+    .timeline-rail__period,
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .timeline-section[data-compiler-phase]
+    .timeline-rail__details {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .timeline-section[data-compiler-phase]
+    .timeline-rail__compile-path,
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .timeline-section[data-compiler-phase]
+    .timeline-rail__record[data-active]
+    .timeline-rail__marker::after {
+    animation: none;
+  }
+
+  .timeline-rail__marker,
+  .timeline-rail__marker::after {
+    transition: none;
+  }
+
+  .timeline-rail__probe-path {
+    display: none;
   }
 }
 
@@ -400,6 +590,12 @@ html[data-effect-mode="static"] .timeline-rail__marker::after {
 
   .timeline-rail__records {
     gap: clamp(2.25rem, 8vw, 3.25rem);
+  }
+
+  .timeline-rail__record,
+  .timeline-rail__record[data-side="left"] {
+    --timeline-settle-x: 8px;
+    --timeline-compile-x: min(8px, var(--compile-offset));
   }
 
   .timeline-rail__record {

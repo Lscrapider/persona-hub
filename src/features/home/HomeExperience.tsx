@@ -10,6 +10,7 @@ import {
 
 import { LocaleProvider, useLocaleContent } from "@/i18n/LocaleProvider";
 import type { LocalizedArchiveContent } from "@/lib/content/types";
+import { ArchiveRuntime } from "@/effects/runtime/ArchiveRuntime";
 import { EffectModeControl } from "@/ui/EffectModeControl";
 import { LocaleControl } from "@/ui/LocaleControl";
 import { EntryGate } from "@/features/entry/EntryGate";
@@ -104,12 +105,13 @@ function LocalizedHomeExperience() {
 
   return (
     <>
-      <div
-        aria-hidden={isArchiveLocked || undefined}
-        className="archive-experience"
-        inert={isArchiveLocked || undefined}
+      <ArchiveRuntime
+        content={content}
+        enabled={revealEnabled}
+        key={locale}
+        locked={isArchiveLocked}
       >
-        <main className="home-experience" key={locale}>
+        <main className="home-experience">
           <HomeHero
             archiveActionRef={archiveActionRef}
             onSelectProject={handleCurrentIndexProjectSelect}
@@ -127,7 +129,7 @@ function LocalizedHomeExperience() {
           <LocaleControl />
           <EffectModeControl />
         </div>
-      </div>
+      </ArchiveRuntime>
       <EntryGate focusTargetRef={archiveActionRef} onEnter={handleEnter} />
     </>
   );

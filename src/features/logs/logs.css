@@ -89,10 +89,32 @@
   block-size: calc(100% - var(--logs-reader-surface-top));
   overflow: visible;
   pointer-events: none;
+  transform: scale(var(--compile-scale));
+  transform-box: fill-box;
+  transform-origin: right center;
+  transition: transform var(--duration-compile) var(--ease-out);
 }
 
-.logs-explorer__reader-surface path {
+.logs-explorer__reader-shape {
   fill: var(--color-bone);
+}
+
+.logs-explorer__compile-path {
+  fill: none;
+  opacity: 0;
+  stroke: var(--color-signal);
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  stroke-width: 1px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready="true"]
+    .logs-section[data-compiler-phase="mounted"]
+    .logs-explorer__compile-path {
+    animation: archive-compile-seam 320ms var(--ease-out) both;
+  }
 }
 
 .log-word-field {
@@ -183,7 +205,7 @@
   content: "";
   opacity: 0;
   transform: scaleY(0.4);
-  transform-origin: center;
+  transform-origin: top center;
   transition:
     opacity var(--duration-fast) var(--ease-out),
     transform var(--duration-fast) var(--ease-out);
@@ -199,9 +221,17 @@
   outline-offset: -1px;
 }
 
-.logs-explorer__choice:is(:hover, :focus-visible, [data-selected])::before {
+.logs-explorer__choice:is(:hover, :focus-visible)::before {
   opacity: 1;
   transform: scaleY(1);
+}
+
+.logs-explorer__choice[data-selected]::before {
+  opacity: 1;
+  transform: scaleY(var(--compile-line-scale));
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-compile) var(--ease-out) 45ms;
 }
 
 .logs-explorer__choice-id,
@@ -298,6 +328,10 @@
   padding: clamp(7rem, 8.3vw, 9rem) clamp(2rem, 3vw, 3.5rem)
     clamp(5rem, 9vw, 9rem) var(--logs-reader-content-inset);
   border: 0;
+  background:
+    linear-gradient(var(--color-signal), var(--color-signal)) right top / 1px
+      var(--logs-read-progress, 0%) no-repeat,
+    transparent;
   color: var(--color-ink);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -329,6 +363,11 @@
   padding-block-end: clamp(1.6rem, 3.5vw, 3.2rem);
   border-block-end: var(--line-hairline) solid
     color-mix(in oklch, var(--color-ink) 24%, transparent);
+  opacity: var(--compile-local-opacity);
+  transform: translateY(clamp(0px, var(--compile-offset), 0.45rem));
+  transition:
+    opacity var(--duration-compile) var(--ease-out) 90ms,
+    transform var(--duration-compile) var(--ease-out) 90ms;
 }
 
 .logs-reader__metadata {
@@ -342,6 +381,8 @@
   border-block-end: var(--line-hairline) solid
     color-mix(in oklch, var(--color-ink) 20%, transparent);
   color: color-mix(in oklch, var(--color-ink) 72%, transparent);
+  animation: logs-reader-selection-settle var(--duration-compile) var(--ease-out)
+    both;
 }
 
 .logs-reader__meta-primary {
@@ -364,6 +405,8 @@
   line-height: 0.84;
   text-transform: uppercase;
   text-wrap: balance;
+  animation: logs-reader-selection-settle var(--duration-compile) var(--ease-out)
+    45ms both;
 }
 
 .logs-reader h3[data-cjk-heading] {
@@ -390,6 +433,33 @@
   padding-block-start: clamp(1.9rem, 3vw, 3.2rem);
   font-size: 0.98rem;
   line-height: 1.75;
+}
+
+.markdown-article > [data-log-block] {
+  border-inline-start: 1px solid transparent;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    border-color var(--duration-probe) var(--ease-out),
+    opacity var(--duration-compile) var(--ease-out),
+    transform var(--duration-compile) var(--ease-out);
+}
+
+.markdown-article > [data-log-block][data-read-phase="queued"] {
+  opacity: 0.88;
+  transform: translateX(0.35rem);
+}
+
+.markdown-article > [data-log-block][data-read-phase="stable"] {
+  border-inline-start-color: color-mix(
+    in oklch,
+    var(--color-signal) 26%,
+    transparent
+  );
+}
+
+.markdown-article > [data-log-block]:is(:hover, :focus-within) {
+  border-inline-start-color: var(--color-signal);
 }
 
 .markdown-article p,
@@ -505,9 +575,149 @@
   font-size: 1rem;
 }
 
+@keyframes logs-reader-selection-settle {
+  from {
+    opacity: 0.88;
+    transform: translateY(0.2rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes logs-reader-surface-settle {
+  from {
+    transform: scale(0.985);
+  }
+
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes logs-selected-line-settle {
+  from {
+    transform: scaleY(0.12);
+  }
+
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes logs-reader-header-settle {
+  from {
+    opacity: 0.88;
+    transform: translateY(0.45rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    html[data-effect-mode="full"]
+      .archive-experience[data-runtime-ready="true"]
+      .logs-section {
+      view-timeline-axis: block;
+      view-timeline-name: --logs-document;
+    }
+
+    html[data-effect-mode="full"]
+      .archive-experience[data-runtime-ready="true"]
+      .logs-section
+      .logs-explorer__reader-surface {
+      animation: logs-reader-surface-settle linear both;
+      animation-duration: auto;
+      animation-timeline: --logs-document;
+      animation-range: entry 0% cover 30%;
+      transition: none;
+    }
+
+    html[data-effect-mode="full"]
+      .archive-experience[data-runtime-ready="true"]
+      .logs-section
+      .logs-explorer__choice[data-selected]::before {
+      animation: logs-selected-line-settle linear both;
+      animation-duration: auto;
+      animation-timeline: --logs-document;
+      animation-range: entry 8% cover 38%;
+      transition: none;
+    }
+
+    html[data-effect-mode="full"]
+      .archive-experience[data-runtime-ready="true"]
+      .logs-section
+      .logs-reader__header {
+      animation: logs-reader-header-settle linear both;
+      animation-duration: auto;
+      animation-timeline: --logs-document;
+      animation-range: entry 16% cover 46%;
+      transition: none;
+    }
+  }
+}
+
 html[data-effect-mode="static"] .logs-explorer__choice,
 html[data-effect-mode="static"] .logs-explorer__choice::before {
   transition: none;
+}
+
+html[data-effect-mode="static"] .logs-explorer__reader-surface,
+html[data-effect-mode="static"] .logs-reader__header,
+html[data-effect-mode="static"] .logs-reader__metadata,
+html[data-effect-mode="static"] .logs-reader h3,
+html[data-effect-mode="static"] .markdown-article > [data-log-block] {
+  animation: none;
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+html[data-effect-mode="static"]
+  .logs-explorer__choice[data-selected]::before {
+  animation: none;
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+html[data-effect-mode="static"] .logs-explorer__compile-path {
+  animation: none;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logs-explorer__choice,
+  .logs-explorer__choice::before {
+    transition: none;
+  }
+
+  .logs-explorer__reader-surface,
+  .logs-reader__header,
+  .logs-reader__metadata,
+  .logs-reader h3,
+  .markdown-article > [data-log-block] {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .logs-explorer__choice[data-selected]::before {
+    animation: none;
+    opacity: 1;
+    transform: scaleY(1);
+  }
+
+  .logs-explorer__compile-path {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 @media (max-width: 64rem) {
@@ -604,6 +814,42 @@ html[data-effect-mode="static"] .logs-explorer__choice::before {
     overflow: visible;
     overscroll-behavior: auto;
     scrollbar-gutter: auto;
+  }
+
+  @supports (animation-timeline: view()) {
+    html[data-effect-mode="full"]
+      .archive-experience[data-runtime-ready="true"]
+      .logs-section {
+      view-timeline-name: none;
+    }
+
+    html[data-effect-mode="full"]
+      .archive-experience[data-runtime-ready="true"]
+      .logs-section
+      .logs-explorer__reader-surface {
+      animation: none;
+      transition: transform var(--duration-compile) var(--ease-out);
+    }
+
+    html[data-effect-mode="full"]
+      .archive-experience[data-runtime-ready="true"]
+      .logs-section
+      .logs-explorer__choice[data-selected]::before {
+      animation: none;
+      transition:
+        opacity var(--duration-fast) var(--ease-out),
+        transform var(--duration-compile) var(--ease-out) 45ms;
+    }
+
+    html[data-effect-mode="full"]
+      .archive-experience[data-runtime-ready="true"]
+      .logs-section
+      .logs-reader__header {
+      animation: none;
+      transition:
+        opacity var(--duration-compile) var(--ease-out) 90ms,
+        transform var(--duration-compile) var(--ease-out) 90ms;
+    }
   }
 }
 

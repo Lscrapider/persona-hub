@@ -26,11 +26,16 @@ export function ArchiveSection({
     <section
       aria-labelledby={headingId}
       className={rootClassName}
+      data-runtime-section={definition.id}
       data-surface={definition.surface}
       id={definition.id}
     >
       <div className="archive-section__inner">
-        <header className="archive-section__header">
+        <header
+          className="archive-section__header"
+          data-physics-surface={definition.id}
+          data-physics-target={definition.id}
+        >
           <p className="archive-section__eyebrow">
             <CopyReveal enabled={revealEnabled} text={definition.eyebrow} />
           </p>

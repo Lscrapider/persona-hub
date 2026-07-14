@@ -39,32 +39,100 @@ export function useActiveTimelineRecord(records: readonly TimelineRecord[]) {
       return;
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleRecord = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+    let observer: IntersectionObserver | null = null;
+    let resizeFrame = 0;
 
-        if (visibleRecord) {
-          setActiveId(visibleRecord.target.getAttribute("data-timeline-id"));
+    const reconcileActiveRecord = () => {
+      const viewportHeight = Math.max(1, window.innerHeight);
+      const bandStart = viewportHeight * 0.32;
+      const bandEnd = viewportHeight * 0.58;
+      const bandCenter = (bandStart + bandEnd) / 2;
+      let bestId: string | null = null;
+      let bestOverlap = -1;
+      let bestDistance = Number.POSITIVE_INFINITY;
+
+      records.forEach((record) => {
+        const element = recordElementsRef.current.get(record.id);
+
+        if (!element) {
+          return;
         }
-      },
-      {
-        rootMargin: "-32% 0px -42% 0px",
-        threshold: [0.15, 0.5, 0.85],
-      },
-    );
 
-    records.forEach((record) => {
-      const element = recordElementsRef.current.get(record.id);
+        const rect = element.getBoundingClientRect();
+        const overlap = Math.max(
+          0,
+          Math.min(rect.bottom, bandEnd) - Math.max(rect.top, bandStart),
+        );
+        const distance = Math.abs((rect.top + rect.bottom) / 2 - bandCenter);
 
-      if (element) {
-        observer.observe(element);
+        if (
+          overlap > bestOverlap ||
+          (overlap === bestOverlap && distance < bestDistance)
+        ) {
+          bestId = record.id;
+          bestOverlap = overlap;
+          bestDistance = distance;
+        }
+      });
+
+      if (bestId) {
+        setActiveId(bestId);
       }
+    };
+
+    const connectObserver = () => {
+      observer?.disconnect();
+
+      const viewportHeight = Math.max(1, window.innerHeight);
+      const topInset = Math.round(viewportHeight * 0.32);
+      const bottomInset = Math.round(viewportHeight * 0.42);
+
+      observer = new IntersectionObserver(reconcileActiveRecord, {
+        rootMargin:
+          `-${topInset.toString()}px 0px ` +
+          `-${bottomInset.toString()}px 0px`,
+        threshold: [0, 0.15, 0.5, 0.85],
+      });
+
+      records.forEach((record) => {
+        const element = recordElementsRef.current.get(record.id);
+
+        if (element) {
+          observer?.observe(element);
+        }
+      });
+    };
+
+    const handleResize = () => {
+      if (resizeFrame) {
+        window.cancelAnimationFrame(resizeFrame);
+      }
+
+      resizeFrame = window.requestAnimationFrame(() => {
+        resizeFrame = 0;
+        connectObserver();
+        reconcileActiveRecord();
+      });
+    };
+
+    connectObserver();
+    resizeFrame = window.requestAnimationFrame(() => {
+      resizeFrame = 0;
+      reconcileActiveRecord();
+    });
+    window.addEventListener("resize", handleResize, { passive: true });
+    window.visualViewport?.addEventListener("resize", handleResize, {
+      passive: true,
     });
 
     return () => {
-      observer.disconnect();
+      if (resizeFrame) {
+        window.cancelAnimationFrame(resizeFrame);
+      }
+
+      observer?.disconnect();
+      window.removeEventListener("resize", handleResize);
+      window.visualViewport?.removeEventListener("resize", handleResize);
     };
   }, [records]);
 

@@ -156,6 +156,11 @@
   transform: scaleX(1);
 }
 
+.project-explorer__choice[data-selected]::after {
+  transform: scaleX(var(--compile-line-scale));
+  transition: transform var(--duration-compile) var(--ease-out);
+}
+
 .project-explorer__choice-id,
 .project-explorer__choice-status {
   font-family: var(--font-mono);
@@ -224,6 +229,15 @@
 
 .project-explorer__detail-header {
   padding-block-end: clamp(2rem, 4vw, 4.25rem);
+  clip-path: inset(0 var(--compile-mask) 0 0);
+  opacity: var(--compile-local-opacity);
+  transform: translateX(
+    calc(0px - min(var(--compile-offset), 0.4rem))
+  );
+  transition:
+    clip-path var(--duration-compile) var(--ease-out) 55ms,
+    opacity var(--duration-compile) var(--ease-out) 55ms,
+    transform var(--duration-compile) var(--ease-out) 55ms;
 }
 
 .project-explorer__detail-meta {
@@ -273,7 +287,7 @@
 
 .project-explorer__title-reveal {
   display: block;
-  animation: project-title-reveal 520ms var(--ease-out) both;
+  animation: project-title-selection 420ms var(--ease-out) both;
 }
 
 .project-explorer__signature {
@@ -379,8 +393,6 @@
 .project-explorer__token-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  border-block-start: var(--line-hairline) solid
-    color-mix(in oklch, var(--color-bone) 24%, transparent);
   color: color-mix(in oklch, var(--color-bone) 75%, transparent);
   font-family: var(--font-mono);
   font-size: 0.72rem;
@@ -390,10 +402,22 @@
 }
 
 .project-explorer__token-list li {
+  position: relative;
   min-inline-size: 0;
   padding: var(--space-xs) var(--space-sm) var(--space-xs) 0;
-  border-block-end: var(--line-hairline) solid
-    color-mix(in oklch, var(--color-bone) 24%, transparent);
+}
+
+.project-explorer__token-list li::after {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: var(--line-hairline);
+  background: color-mix(in oklch, var(--color-bone) 24%, transparent);
+  content: "";
+  pointer-events: none;
+  transform: scaleX(var(--compile-line-scale));
+  transform-origin: 0 50%;
+  transition: transform var(--duration-compile) var(--ease-out) 110ms;
 }
 
 .project-explorer__capabilities {
@@ -438,11 +462,23 @@
 }
 
 .project-tree .project-tree {
+  position: relative;
   margin-block-start: var(--space-2xs);
   margin-inline-start: 0.55rem;
   padding-inline-start: 1rem;
-  border-inline-start: var(--line-hairline) solid
-    color-mix(in oklch, var(--color-bone) 28%, transparent);
+}
+
+.project-tree .project-tree::before {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: var(--line-hairline);
+  background: color-mix(in oklch, var(--color-bone) 28%, transparent);
+  content: "";
+  pointer-events: none;
+  transform: scaleY(var(--compile-line-scale));
+  transform-origin: 50% 0;
+  transition: transform var(--duration-compile) var(--ease-out) 110ms;
 }
 
 .project-tree .project-tree > li::before {
@@ -450,9 +486,13 @@
   inset-inline-start: -1rem;
   inset-block-start: 1.05rem;
   inline-size: 0.65rem;
-  border-block-start: var(--line-hairline) solid
-    color-mix(in oklch, var(--color-bone) 28%, transparent);
+  block-size: var(--line-hairline);
+  background: color-mix(in oklch, var(--color-bone) 28%, transparent);
   content: "";
+  pointer-events: none;
+  transform: scaleX(var(--compile-line-scale));
+  transform-origin: 0 50%;
+  transition: transform var(--duration-compile) var(--ease-out) 110ms;
 }
 
 .project-tree summary,
@@ -526,18 +566,214 @@
   line-height: 1.5;
 }
 
+.project-tree details:has(
+    [data-runtime-target]:is(:hover, :focus-visible)
+  ) > summary,
+.project-tree__leaf:is(:hover, :focus-visible) {
+  color: var(--color-signal);
+}
+
+.project-tree details:has(
+    [data-runtime-target]:is(:hover, :focus-visible)
+  ) > summary .project-tree__toggle,
+.project-tree__leaf:hover::before {
+  border-color: var(--color-signal);
+  background: var(--color-signal);
+}
+
 .project-explorer__empty {
   margin: 0;
   color: color-mix(in oklch, var(--color-bone) 76%, transparent);
+}
+
+@keyframes project-title-selection {
+  from {
+    clip-path: inset(0 12% 0 0);
+    opacity: 0.88;
+    transform: translateX(-0.2rem);
+  }
+
+  to {
+    clip-path: inset(0);
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes project-detail-header-assemble {
+  from {
+    clip-path: inset(0 8% 0 0);
+    opacity: 0.88;
+    transform: translateX(-0.4rem);
+  }
+
+  to {
+    clip-path: inset(0);
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes project-rule-assemble {
+  from {
+    transform: scaleX(0.12);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes project-tree-rule-assemble {
+  from {
+    transform: scaleY(0.12);
+  }
+
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    html[data-effect-mode="full"]
+      .archive-experience[data-runtime-ready]
+      .projects-section {
+      view-timeline-name: --projects-section;
+      view-timeline-axis: block;
+    }
+
+    html[data-effect-mode="full"]
+      .archive-experience[data-runtime-ready]
+      .project-explorer__choice[data-selected]::after {
+      animation: project-rule-assemble linear both;
+      animation-duration: auto;
+      animation-timeline: --projects-section;
+      animation-range: entry 0% cover 14%;
+      transition: none;
+    }
+
+    html[data-effect-mode="full"]
+      .archive-experience[data-runtime-ready]
+      .project-explorer__detail-header {
+      animation: project-detail-header-assemble linear both;
+      animation-duration: auto;
+      animation-timeline: --projects-section;
+      animation-range: entry 7% cover 26%;
+      transition: none;
+    }
+
+    html[data-effect-mode="full"]
+      .archive-experience[data-runtime-ready]
+      .project-explorer__token-list li::after,
+    html[data-effect-mode="full"]
+      .archive-experience[data-runtime-ready]
+      .project-tree .project-tree > li::before {
+      animation: project-rule-assemble linear both;
+      animation-duration: auto;
+      animation-timeline: --projects-section;
+      animation-range: entry 15% cover 40%;
+      transition: none;
+    }
+
+    html[data-effect-mode="full"]
+      .archive-experience[data-runtime-ready]
+      .project-tree .project-tree::before {
+      animation: project-tree-rule-assemble linear both;
+      animation-duration: auto;
+      animation-timeline: --projects-section;
+      animation-range: entry 15% cover 40%;
+      transition: none;
+    }
+  }
+
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .projects-section[data-compiler-phase="mounted"]
+    .project-explorer__choice[data-selected]::after {
+    animation: archive-compile-seam-scale 320ms var(--ease-out);
+  }
+}
+
+@media (max-width: 52rem) {
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .projects-section {
+    view-timeline-name: none;
+  }
+
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .project-explorer__choice[data-selected]::after {
+    animation: none;
+    animation-range: normal;
+    animation-timeline: auto;
+    transition: transform var(--duration-compile) var(--ease-out);
+  }
+
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .project-explorer__detail-header {
+    animation: none;
+    animation-range: normal;
+    animation-timeline: auto;
+    transition:
+      clip-path var(--duration-compile) var(--ease-out) 55ms,
+      opacity var(--duration-compile) var(--ease-out) 55ms,
+      transform var(--duration-compile) var(--ease-out) 55ms;
+  }
+
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .project-explorer__token-list li::after,
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .project-tree .project-tree::before,
+  html[data-effect-mode="full"]
+    .archive-experience[data-runtime-ready]
+    .project-tree .project-tree > li::before {
+    animation: none;
+    animation-range: normal;
+    animation-timeline: auto;
+    transition: transform var(--duration-compile) var(--ease-out) 110ms;
+  }
 }
 
 html[data-effect-mode="static"] .project-explorer__choice,
 html[data-effect-mode="static"] .project-explorer__choice::after,
 html[data-effect-mode="static"] .project-explorer__external-link span,
 html[data-effect-mode="static"] .project-tree__toggle::after,
-html[data-effect-mode="static"] .project-explorer__title-reveal {
+html[data-effect-mode="static"] .project-explorer__title-reveal,
+html[data-effect-mode="static"] .project-explorer__detail-header,
+html[data-effect-mode="static"] .project-explorer__token-list li::after,
+html[data-effect-mode="static"] .project-tree .project-tree::before,
+html[data-effect-mode="static"] .project-tree .project-tree > li::before {
   transition: none;
   animation: none;
+}
+
+html[data-effect-mode="static"] .project-explorer__detail-header,
+html[data-effect-mode="static"] .project-explorer__title-reveal {
+  clip-path: inset(0);
+  opacity: 1;
+  transform: none;
+}
+
+html[data-effect-mode="static"]
+  .project-explorer__choice[data-selected]::after,
+html[data-effect-mode="static"] .project-explorer__token-list li::after,
+html[data-effect-mode="static"] .project-tree .project-tree > li::before {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+html[data-effect-mode="static"]
+  .project-explorer__choice[data-selected]::after {
+  transition: none;
+}
+
+html[data-effect-mode="static"] .project-tree .project-tree::before {
+  transform: scaleY(1);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -545,23 +781,35 @@ html[data-effect-mode="static"] .project-explorer__title-reveal {
   .project-explorer__choice::after,
   .project-explorer__external-link span,
   .project-tree__toggle::after,
-  .project-explorer__title-reveal {
+  .project-explorer__title-reveal,
+  .project-explorer__detail-header,
+  .project-explorer__token-list li::after,
+  .project-tree .project-tree::before,
+  .project-tree .project-tree > li::before {
     transition: none;
     animation: none;
   }
-}
 
-@keyframes project-title-reveal {
-  from {
-    clip-path: inset(0 0 100% 0);
-    opacity: 0;
-    transform: translateY(0.14em);
-  }
-
-  to {
+  .project-explorer__detail-header,
+  .project-explorer__title-reveal {
     clip-path: inset(0);
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
+  }
+
+  .project-explorer__choice[data-selected]::after,
+  .project-explorer__token-list li::after,
+  .project-tree .project-tree > li::before {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+
+  .project-explorer__choice[data-selected]::after {
+    transition: none;
+  }
+
+  .project-tree .project-tree::before {
+    transform: scaleY(1);
   }
 }
 

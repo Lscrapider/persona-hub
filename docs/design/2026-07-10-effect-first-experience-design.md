@@ -1,13 +1,13 @@
 # Scra Atlas effect-first experience design
 
 **Status:** current
-**Updated:** 2026-07-11
+**Updated:** 2026-07-14
 
 ## Direction
 
 Scra Atlas is a continuous personal technical archive. It begins with an identity and living Hero, then lets visitors read Timeline, Projects, and Logs in one scrollable root document. The active sequence is **Hero → Timeline → Projects → Logs**; Current Index remains part of the Hero threshold rather than a separate archive module.
 
-The experience should feel precise, dynamic, and authored. It should not resemble a route collection, a generic portfolio grid, a fake terminal, or a celestial technology demo.
+The experience should feel precise, dynamic, authored, and participatory: scrolling should feel like compiling a real project archive, while pointer and keyboard focus inspect the content already being read. It should not resemble a route collection, a generic portfolio grid, a fake terminal, or a celestial technology demo.
 
 ## Information architecture
 
@@ -39,11 +39,19 @@ Current Index runs along the lower bone edge. The curved Canvas field uses low-c
 
 Each module is a labelled semantic section, not a separate top-level visual shell. It may have a distinct surface and feature-local display treatment while preserving the common long-scroll rhythm.
 
+## Scroll compiler and pointer debugger
+
+The added interaction layer changes behavior rather than redesigning the established UI. `ArchiveRuntime` wraps the existing section composition and applies one shared state language: `queued → resolving → mounted → stable`. A prewarm observer band starts a section's resolve response, while a centre observer band makes at most one section the mounted focus. The same rules work in both scroll directions and do not depend on `window.scrollY` or a global scroll handler.
+
+Features expose real `data-runtime-target` paths rather than invented telemetry. Pointer hover, native keyboard focus, and existing activation controls can therefore inspect a Timeline record, select a Project, toggle a native tree branch, or read a Log block without adding interaction-only focus stops. The low-contrast probe is visible only for fine pointers in FULL mode. Its position is written to CSS variables in one scheduled frame and never becomes rapidly changing React state.
+
+A short Build Trace connects these actions to the compiler language. It is transient, deduplicated, `aria-hidden`, and built only from real archive paths. It deliberately does not imitate a terminal, expose fake compilation output, or carry information required to operate the page.
+
 ## Motion and accessibility
 
-Reader copy has a single one-time entry language: English and numbers decode, Chinese reveals through a mask or clip. It starts only when the cover has released the archive and the copy itself becomes visible. It never replays during normal scroll.
+Reader copy has a single one-time entry language: English and numbers decode, Chinese reveals through a mask or clip. It starts only when the cover has released the archive and the copy itself becomes visible. It never replays during normal scroll. Section compilation changes only local position, signal strength, marker treatment, and trace feedback; content remains readable before and throughout every phase.
 
-The Hero signature and Hero Canvas scene system are the only persistent motion systems. The scene combines slow path text with its curved clipping field and pauses when off-screen or backgrounded. The optional Logs word field runs only a brief FULL entrance and visibility-gated redraws from resize or pointer activity; STATIC uses its deterministic final frame. System reduced motion starts in STATIC, but an explicit persisted FULL setting remains available.
+The Hero signature and Hero scene system contain the only persistent motion, and the Hero word field is the only permanent animation-frame scene. It combines slow path text with its curved clipping field and pauses when off-screen or backgrounded. The optional Logs word field runs only a brief FULL entrance and visibility-gated redraws from resize or pointer activity. Logs reading progress listens passively only to its bounded reader and coalesces CSS-variable updates into a single scheduled frame. STATIC uses deterministic final frames and disables compiler displacement, pulse, and probe. System reduced motion starts in STATIC, but an explicit persisted FULL setting remains available.
 
 No required content depends on hover, random glyph stabilization, visual scene completion, Canvas, or a particular rendering API. Timeline and Projects retain DOM/SVG controls because their state is information, not scenery.
 
@@ -59,6 +67,6 @@ No required content depends on hover, random glyph stabilization, visual scene c
 ## Explicit exclusions
 
 - No planets, black holes, nebulae, particle fields, raymarching, decorative shaders, or WebGL showcase.
-- No green terminal imitation, neon glow, fake logs, or persistent random text.
+- No green terminal imitation, neon glow, fake logs, fake Build Trace telemetry, or persistent random text.
 - No scroll snap, Lenis, scroll locking, duplicate navigation, or continuously rewritten URL.
 - No reference-site copying.

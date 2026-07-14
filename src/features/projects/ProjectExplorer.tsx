@@ -54,8 +54,12 @@ export function ProjectExplorer({
   const projectSignature = selectedProject.stack.join(" / ");
 
   return (
-    <div className="project-explorer">
-      <div className="project-explorer__index">
+    <div
+      className="project-explorer"
+      data-physics-surface="projects"
+      data-physics-target={`projects/${selectedProject.id}`}
+    >
+      <div className="project-explorer__index" data-physics-ignore>
         <div className="project-explorer__index-heading">
           <p>{copy.indexHeading}</p>
           <span>{projects.length.toString().padStart(2, "0")}</span>
@@ -71,6 +75,9 @@ export function ProjectExplorer({
                   aria-controls="project-explorer-detail"
                   aria-pressed={isSelected}
                   className="project-explorer__choice"
+                  data-runtime-activate-action="select"
+                  data-runtime-hover-action="inspect"
+                  data-runtime-target={`projects/${project.id}`}
                   data-selected={isSelected || undefined}
                   onClick={() => onSelectProject(project.id)}
                   type="button"
@@ -100,7 +107,11 @@ export function ProjectExplorer({
       <article
         aria-labelledby="project-explorer-title"
         className="project-explorer__detail"
+        data-physics-ignore
+        data-runtime-hover-action="inspect"
+        data-runtime-target={`projects/${selectedProject.id}`}
         id="project-explorer-detail"
+        key={selectedProject.id}
       >
         <p aria-live="polite" className="project-explorer__announcement">
           {copy.activeProject}: {selectedProject.title}
@@ -171,7 +182,11 @@ export function ProjectExplorer({
             className="project-explorer__tree-panel"
           >
             <h4 id="project-system-map-title">{copy.systemMap}</h4>
-            <ProjectTree key={selectedProject.id} nodes={selectedProject.tree} />
+            <ProjectTree
+              key={selectedProject.id}
+              nodes={selectedProject.tree}
+              projectId={selectedProject.id}
+            />
           </section>
         </div>
       </article>

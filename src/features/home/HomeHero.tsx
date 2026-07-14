@@ -41,6 +41,7 @@ export function HomeHero({
     <section
       aria-labelledby="home-hero-title"
       className="home-hero"
+      data-runtime-section="index"
       id="index"
       ref={heroRef}
     >
@@ -101,6 +102,9 @@ export function HomeHero({
 
         <a
           className="home-hero__action"
+          data-runtime-activate-action="open"
+          data-runtime-hover-action="inspect"
+          data-runtime-target="timeline"
           href={getLocaleArchiveHref(site.locale, site.archiveAction.href)}
           ref={archiveActionRef}
         >

@@ -1,9 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-
 import { CopyReveal } from "@/effects/primitives/CopyReveal";
-import { useEffectMode } from "@/effects/runtime/EffectMode";
 import type { LocaleUiCopy, TimelineRecord } from "@/lib/content/types";
 import { containsCjk } from "@/lib/typography";
 
@@ -20,12 +17,6 @@ function normalizeDateTime(sortDate: string): string {
 }
 
 export function TimelineRail({ labels, records, revealEnabled }: TimelineRailProps) {
-  const { mode } = useEffectMode();
-  const railRef = useRef<HTMLDivElement>(null);
-  const [hasTraceEntered, setHasTraceEntered] = useState(false);
-  const canObserveTrace = typeof IntersectionObserver !== "undefined";
-  const shouldDrawTrace =
-    hasTraceEntered || (revealEnabled && mode === "full" && !canObserveTrace);
   const [activeId, setActiveId, getRecordRef] =
     useActiveTimelineRecord(records);
   const displayRecords = [...records].reverse().map((record, index, reversedRecords) => {
@@ -41,47 +32,11 @@ export function TimelineRail({ labels, records, revealEnabled }: TimelineRailPro
     } as const;
   });
 
-  useEffect(() => {
-    if (
-      hasTraceEntered ||
-      !revealEnabled ||
-      mode !== "full" ||
-      !railRef.current
-    ) {
-      return;
-    }
-
-    if (!canObserveTrace) {
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) {
-          return;
-        }
-
-        setHasTraceEntered(true);
-        observer.disconnect();
-      },
-      {
-        rootMargin: "0px 0px -18% 0px",
-        threshold: 0.08,
-      },
-    );
-
-    observer.observe(railRef.current);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [canObserveTrace, hasTraceEntered, mode, revealEnabled]);
-
   return (
     <div
       className="timeline-rail"
-      data-trace-state={shouldDrawTrace ? "drawing" : "idle"}
-      ref={railRef}
+      data-physics-surface="timeline"
+      data-physics-target={`timeline/${activeId ?? records[0]?.id ?? "index"}`}
     >
       <svg
         aria-hidden="true"
@@ -92,6 +47,18 @@ export function TimelineRail({ labels, records, revealEnabled }: TimelineRailPro
       >
         <path
           className="timeline-rail__trace-path"
+          d="M 50 0 V 100"
+          pathLength="1"
+          vectorEffect="non-scaling-stroke"
+        />
+        <path
+          className="timeline-rail__compile-path"
+          d="M 50 0 V 100"
+          pathLength="1"
+          vectorEffect="non-scaling-stroke"
+        />
+        <path
+          className="timeline-rail__probe-path"
           d="M 50 0 V 100"
           pathLength="1"
           vectorEffect="non-scaling-stroke"
@@ -109,6 +76,8 @@ export function TimelineRail({ labels, records, revealEnabled }: TimelineRailPro
               <article
                 className="timeline-rail__record"
                 data-active={isActive || undefined}
+                data-runtime-hover-action="inspect"
+                data-runtime-target={`timeline/${record.id}`}
                 data-side={side}
                 data-timeline-id={record.id}
                 ref={getRecordRef(record.id)}
@@ -117,6 +86,9 @@ export function TimelineRail({ labels, records, revealEnabled }: TimelineRailPro
                   aria-label={`${labels.focusLabel} ${record.period}: ${record.title}`}
                   aria-pressed={isActive}
                   className="timeline-rail__marker"
+                  data-runtime-activate-action="pin"
+                  data-runtime-hover-action="inspect"
+                  data-runtime-target={`timeline/${record.id}`}
                   onClick={() => setActiveId(record.id)}
                   type="button"
                 >

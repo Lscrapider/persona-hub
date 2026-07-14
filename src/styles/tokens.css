@@ -30,10 +30,13 @@
   --line-hairline: 1px;
 
   --duration-instant: 120ms;
+  --duration-probe: 160ms;
   --duration-fast: 220ms;
   --duration-base: 380ms;
+  --duration-compile: 560ms;
   --duration-scene: 720ms;
   --duration-ritual: 1200ms;
+  --duration-trace: 1200ms;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
   --layer-base: 0;

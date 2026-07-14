@@ -1,7 +1,13 @@
 import {
+  HERO_FIELD_COLUMNS,
+  HERO_FIELD_ROWS,
+} from "@/effects/physics/physicsConstants";
+import {
   CONNECTOR_DOT_OPACITY,
   getKineticSceneLayout,
   getKineticTrackFont,
+  KINETIC_INNER_TRACK_FONT_SCALE,
+  KINETIC_OUTER_TRACK_FONT_SCALE,
   POINTER_DOT_OPACITY,
   TRACK_TEXT_OPACITY,
   type KineticPalette,
@@ -9,7 +15,8 @@ import {
   type KineticSceneLayout,
   type KineticSurfaceGeometry,
   type SceneBounds,
-} from "@/features/home/kineticTypeFieldRenderer";
+} from "@/features/home/kineticTypeFieldScene";
+import type { HeroPhysicsFrame } from "@/features/home/heroPhysicsAdapter";
 
 const TAU = Math.PI * 2;
 const GLYPH_ATLAS_SCALE = 2;
@@ -17,16 +24,54 @@ const GLYPH_ATLAS_PADDING = 2;
 const GLYPH_ATLAS_LINE_HEIGHT = 1.6;
 const SURFACE_SEGMENTS = 192;
 const INSTANCE_FLOAT_COUNT = 7;
+const SURFACE_VERTEX_FLOAT_COUNT = 3;
+const INACTIVE_PHYSICS_FIELD = new Float32Array(
+  HERO_FIELD_COLUMNS * HERO_FIELD_ROWS * 2,
+);
+
+const PHYSICS_SAMPLE_GLSL = `
+uniform sampler2D uPhysicsField;
+uniform vec2 uPhysicsGrid;
+uniform float uMaxDisplacement;
+
+vec2 samplePhysicsField(vec2 scenePosition) {
+  vec2 normalized = clamp(scenePosition / uBounds, 0.0, 1.0);
+  vec2 gridPosition = normalized * (uPhysicsGrid - 1.0);
+  ivec2 lower = ivec2(floor(gridPosition));
+  ivec2 upper = min(lower + ivec2(1), ivec2(uPhysicsGrid) - ivec2(1));
+  vec2 blend = fract(gridPosition);
+  vec2 top = mix(
+    texelFetch(uPhysicsField, ivec2(lower.x, lower.y), 0).rg,
+    texelFetch(uPhysicsField, ivec2(upper.x, lower.y), 0).rg,
+    blend.x
+  );
+  vec2 bottom = mix(
+    texelFetch(uPhysicsField, ivec2(lower.x, upper.y), 0).rg,
+    texelFetch(uPhysicsField, ivec2(upper.x, upper.y), 0).rg,
+    blend.x
+  );
+  vec2 displacement = mix(top, bottom, blend.y);
+  float magnitude = length(displacement);
+
+  if (magnitude > uMaxDisplacement && magnitude > 0.0) {
+    displacement *= uMaxDisplacement / magnitude;
+  }
+
+  return displacement;
+}`;
 
 const SURFACE_VERTEX_SHADER = `#version 300 es
 precision highp float;
 
 layout(location = 0) in vec2 aPosition;
+layout(location = 1) in float aDeformWeight;
 
 uniform vec2 uBounds;
+${PHYSICS_SAMPLE_GLSL}
 
 void main() {
-  vec2 normalized = aPosition / uBounds * 2.0 - 1.0;
+  vec2 position = aPosition + samplePhysicsField(aPosition) * aDeformWeight;
+  vec2 normalized = position / uBounds * 2.0 - 1.0;
   gl_Position = vec4(normalized.x, -normalized.y, 0.0, 1.0);
 }`;
 
@@ -60,8 +105,10 @@ uniform vec2 uSurfaceCenter;
 uniform float uElapsedSeconds;
 uniform vec3 uPointer;
 uniform vec2 uGlyphSize;
+uniform vec2 uRadiusRange;
 uniform float uAtlasColumns;
 uniform float uDotSlot;
+${PHYSICS_SAMPLE_GLSL}
 
 out vec2 vUv;
 out float vOpacity;
@@ -69,13 +116,28 @@ out float vOpacity;
 void main() {
   float angle = aBaseAngle + aPhase + aDirection * uElapsedSeconds / aDuration * TAU;
   vec2 radial = vec2(cos(angle), sin(angle));
-  vec2 center = uSurfaceCenter + radial * aRadius;
+  vec2 restingCenter = uSurfaceCenter + radial * aRadius;
+  vec2 center = restingCenter + samplePhysicsField(restingCenter) * 1.3;
   bool isPointerDot = uPointer.z > 0.0
     && aConnector < 0.5
     && distance(center, uPointer.xy) <= uPointer.z;
   float glyphSlot = isPointerDot ? uDotSlot : aGlyphSlot;
-  vec2 tangent = vec2(-radial.y, radial.x);
-  vec2 local = aQuad * uGlyphSize;
+  float radiusSpan = max(1.0, uRadiusRange.y - uRadiusRange.x);
+  float radialProgress = clamp(
+    (aRadius - uRadiusRange.x) / radiusSpan,
+    0.0,
+    1.0
+  );
+  float glyphScale = mix(
+    ${(KINETIC_INNER_TRACK_FONT_SCALE / KINETIC_OUTER_TRACK_FONT_SCALE).toFixed(4)},
+    1.0,
+    radialProgress
+  );
+  // Each word's placement order is reversed in the scene layout, so this
+  // 180-degree tangent reversal rotates the complete word rather than its
+  // individual letters.
+  vec2 tangent = vec2(radial.y, -radial.x);
+  vec2 local = aQuad * uGlyphSize * glyphScale;
   vec2 rotated = vec2(
     tangent.x * local.x - tangent.y * local.y,
     tangent.y * local.x + tangent.x * local.y
@@ -117,6 +179,7 @@ void main() {
 export type KineticWebglFrame = Readonly<{
   elapsed: number;
   palette: KineticPalette;
+  physics: HeroPhysicsFrame | null;
   pointer: KineticPointer | null;
 }>;
 
@@ -144,6 +207,9 @@ type GlyphResources = Readonly<{
 
 type SurfaceUniforms = Readonly<{
   bounds: WebGLUniformLocation;
+  maxDisplacement: WebGLUniformLocation;
+  physicsField: WebGLUniformLocation;
+  physicsGrid: WebGLUniformLocation;
   voidColor: WebGLUniformLocation;
 }>;
 
@@ -155,6 +221,10 @@ type GlyphUniforms = Readonly<{
   dotSlot: WebGLUniformLocation;
   elapsedSeconds: WebGLUniformLocation;
   glyphSize: WebGLUniformLocation;
+  radiusRange: WebGLUniformLocation;
+  maxDisplacement: WebGLUniformLocation;
+  physicsField: WebGLUniformLocation;
+  physicsGrid: WebGLUniformLocation;
   pointer: WebGLUniformLocation;
   surfaceCenter: WebGLUniformLocation;
 }>;
@@ -253,23 +323,28 @@ function createSurfaceFan(
   bounds: SceneBounds,
   surface: KineticSurfaceGeometry,
 ) {
-  const vertices = new Float32Array((SURFACE_SEGMENTS + 2) * 2);
+  const vertices = new Float32Array(
+    (SURFACE_SEGMENTS + 2) * SURFACE_VERTEX_FLOAT_COUNT,
+  );
   const sweep = getArcSweep(surface);
 
   vertices[0] = bounds.width;
   vertices[1] = 0;
-  vertices[2] = surface.startX;
-  vertices[3] = 0;
+  vertices[2] = 0;
+  vertices[3] = surface.startX;
+  vertices[4] = 0;
+  vertices[5] = 0;
 
   for (let index = 1; index <= SURFACE_SEGMENTS; index += 1) {
     const progress = index / SURFACE_SEGMENTS;
     const angle = surface.startAngle + sweep * progress;
-    const vertexOffset = (index + 1) * 2;
+    const vertexOffset = (index + 1) * SURFACE_VERTEX_FLOAT_COUNT;
 
     vertices[vertexOffset] =
       surface.centerX + Math.cos(angle) * surface.radius;
     vertices[vertexOffset + 1] =
       surface.centerY + Math.sin(angle) * surface.radius;
+    vertices[vertexOffset + 2] = Math.sin(progress * Math.PI);
   }
 
   return vertices;
@@ -283,8 +358,8 @@ function createGlyphAtlas(
   const characters = Array.from(
     new Set([...layout.glyphs.map(({ character }) => character), "·"]),
   );
-  const font = getKineticTrackFont(layout.baseFontSize, fontFamily);
-  const padding = Math.max(GLYPH_ATLAS_PADDING, layout.baseFontSize * 0.2);
+  const font = getKineticTrackFont(layout.atlasFontSize, fontFamily);
+  const padding = Math.max(GLYPH_ATLAS_PADDING, layout.atlasFontSize * 0.2);
 
   measurementContext.font = font;
   const widestGlyph = characters.reduce(
@@ -294,7 +369,7 @@ function createGlyphAtlas(
   );
   const glyphWidth = Math.ceil(widestGlyph + padding * 2);
   const glyphHeight = Math.ceil(
-    layout.baseFontSize * GLYPH_ATLAS_LINE_HEIGHT + padding * 2,
+    layout.atlasFontSize * GLYPH_ATLAS_LINE_HEIGHT + padding * 2,
   );
   const canvas = document.createElement("canvas");
 
@@ -375,12 +450,13 @@ function createColorResolver() {
     return null;
   }
 
-  let cachedColor = "";
-  let cachedRgb: RgbColor = [0, 0, 0];
+  const cache = new Map<string, RgbColor>();
 
   return (color: string): RgbColor => {
-    if (color === cachedColor) {
-      return cachedRgb;
+    const cached = cache.get(color);
+
+    if (cached) {
+      return cached;
     }
 
     context.clearRect(0, 0, 1, 1);
@@ -388,14 +464,14 @@ function createColorResolver() {
     context.fillRect(0, 0, 1, 1);
     const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
 
-    cachedColor = color;
-    cachedRgb = [
+    const rgb: RgbColor = [
       (red ?? 0) / 255,
       (green ?? 0) / 255,
       (blue ?? 0) / 255,
     ];
+    cache.set(color, rgb);
 
-    return cachedRgb;
+    return rgb;
   };
 }
 
@@ -407,7 +483,23 @@ function configureSurfaceVertexArray(
   gl.bindVertexArray(vertexArray);
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl.enableVertexAttribArray(0);
-  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(
+    0,
+    2,
+    gl.FLOAT,
+    false,
+    SURFACE_VERTEX_FLOAT_COUNT * Float32Array.BYTES_PER_ELEMENT,
+    0,
+  );
+  gl.enableVertexAttribArray(1);
+  gl.vertexAttribPointer(
+    1,
+    1,
+    gl.FLOAT,
+    false,
+    SURFACE_VERTEX_FLOAT_COUNT * Float32Array.BYTES_PER_ELEMENT,
+    2 * Float32Array.BYTES_PER_ELEMENT,
+  );
   gl.bindVertexArray(null);
 }
 
@@ -496,6 +588,7 @@ export function createKineticWebglRenderer(
   const glyphVertexArray = gl.createVertexArray();
   const glyphQuadBuffer = gl.createBuffer();
   const glyphInstanceBuffer = gl.createBuffer();
+  const physicsTexture = gl.createTexture();
 
   if (
     !measurementContext ||
@@ -506,7 +599,8 @@ export function createKineticWebglRenderer(
     !surfaceBuffer ||
     !glyphVertexArray ||
     !glyphQuadBuffer ||
-    !glyphInstanceBuffer
+    !glyphInstanceBuffer ||
+    !physicsTexture
   ) {
     if (surfaceProgram) {
       gl.deleteProgram(surfaceProgram);
@@ -529,6 +623,9 @@ export function createKineticWebglRenderer(
     if (glyphInstanceBuffer) {
       gl.deleteBuffer(glyphInstanceBuffer);
     }
+    if (physicsTexture) {
+      gl.deleteTexture(physicsTexture);
+    }
     return null;
   }
 
@@ -538,6 +635,9 @@ export function createKineticWebglRenderer(
   try {
     surfaceUniforms = {
       bounds: getUniform(gl, surfaceProgram, "uBounds"),
+      maxDisplacement: getUniform(gl, surfaceProgram, "uMaxDisplacement"),
+      physicsField: getUniform(gl, surfaceProgram, "uPhysicsField"),
+      physicsGrid: getUniform(gl, surfaceProgram, "uPhysicsGrid"),
       voidColor: getUniform(gl, surfaceProgram, "uVoid"),
     };
     glyphUniforms = {
@@ -548,6 +648,10 @@ export function createKineticWebglRenderer(
       dotSlot: getUniform(gl, glyphProgram, "uDotSlot"),
       elapsedSeconds: getUniform(gl, glyphProgram, "uElapsedSeconds"),
       glyphSize: getUniform(gl, glyphProgram, "uGlyphSize"),
+      radiusRange: getUniform(gl, glyphProgram, "uRadiusRange"),
+      maxDisplacement: getUniform(gl, glyphProgram, "uMaxDisplacement"),
+      physicsField: getUniform(gl, glyphProgram, "uPhysicsField"),
+      physicsGrid: getUniform(gl, glyphProgram, "uPhysicsGrid"),
       pointer: getUniform(gl, glyphProgram, "uPointer"),
       surfaceCenter: getUniform(gl, glyphProgram, "uSurfaceCenter"),
     };
@@ -559,8 +663,29 @@ export function createKineticWebglRenderer(
     gl.deleteVertexArray(glyphVertexArray);
     gl.deleteBuffer(glyphQuadBuffer);
     gl.deleteBuffer(glyphInstanceBuffer);
+    gl.deleteTexture(physicsTexture);
     return null;
   }
+
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, physicsTexture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.RG32F,
+    HERO_FIELD_COLUMNS,
+    HERO_FIELD_ROWS,
+    0,
+    gl.RG,
+    gl.FLOAT,
+    INACTIVE_PHYSICS_FIELD,
+  );
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.activeTexture(gl.TEXTURE0);
 
   configureSurfaceVertexArray(gl, surfaceVertexArray, surfaceBuffer);
   gl.bindBuffer(gl.ARRAY_BUFFER, glyphQuadBuffer);
@@ -584,12 +709,15 @@ export function createKineticWebglRenderer(
   let bounds = options.bounds;
   let pixelRatio = options.pixelRatio;
   let glyphResources: GlyphResources | null = null;
-  let surface = getKineticSceneLayout(
+  const initialLayout = getKineticSceneLayout(
     measurementContext,
     bounds,
     options.fontFamily,
-  ).surface;
+  );
+  let radiusRange = initialLayout.radiusRange;
+  let surface = initialLayout.surface;
   let surfaceVertexCount = 0;
+  let uploadedActivePhysics = false;
   let destroyed = false;
 
   const deleteGlyphResources = () => {
@@ -651,10 +779,11 @@ export function createKineticWebglRenderer(
       glyphInstanceBuffer,
     );
 
+    radiusRange = layout.radiusRange;
     surface = layout.surface;
     const surfaceVertices = createSurfaceFan(bounds, surface);
 
-    surfaceVertexCount = surfaceVertices.length / 2;
+    surfaceVertexCount = surfaceVertices.length / SURFACE_VERTEX_FLOAT_COUNT;
     gl.bindBuffer(gl.ARRAY_BUFFER, surfaceBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, surfaceVertices, gl.STATIC_DRAW);
     glyphResources = {
@@ -697,6 +826,7 @@ export function createKineticWebglRenderer(
     gl.deleteVertexArray(glyphVertexArray);
     gl.deleteBuffer(glyphQuadBuffer);
     gl.deleteBuffer(glyphInstanceBuffer);
+    gl.deleteTexture(physicsTexture);
     return null;
   }
 
@@ -707,9 +837,49 @@ export function createKineticWebglRenderer(
 
     const bone = resolveColor(frame.palette.bone);
     const voidColor = resolveColor(frame.palette.void);
-    const pointer = frame.pointer?.active
-      ? frame.pointer
-      : { active: false, radius: 0, x: 0, y: 0 };
+    const pointer = frame.pointer;
+    const pointerActive = Boolean(pointer?.active);
+    const physics = frame.physics?.active ? frame.physics : null;
+    const physicsField = physics?.field;
+    const hasCompatiblePhysicsField = Boolean(
+      physicsField &&
+        physicsField.columns === HERO_FIELD_COLUMNS &&
+        physicsField.rows === HERO_FIELD_ROWS,
+    );
+    const maxDisplacement = hasCompatiblePhysicsField
+      ? (physics?.maxBoundaryDisplacement ?? 0)
+      : 0;
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, physicsTexture);
+
+    if (hasCompatiblePhysicsField && physicsField) {
+      gl.texSubImage2D(
+        gl.TEXTURE_2D,
+        0,
+        0,
+        0,
+        HERO_FIELD_COLUMNS,
+        HERO_FIELD_ROWS,
+        gl.RG,
+        gl.FLOAT,
+        physicsField.displacementXY,
+      );
+      uploadedActivePhysics = true;
+    } else if (uploadedActivePhysics) {
+      gl.texSubImage2D(
+        gl.TEXTURE_2D,
+        0,
+        0,
+        0,
+        HERO_FIELD_COLUMNS,
+        HERO_FIELD_ROWS,
+        gl.RG,
+        gl.FLOAT,
+        INACTIVE_PHYSICS_FIELD,
+      );
+      uploadedActivePhysics = false;
+    }
 
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.disable(gl.DEPTH_TEST);
@@ -727,7 +897,19 @@ export function createKineticWebglRenderer(
     gl.useProgram(surfaceProgram);
     gl.bindVertexArray(surfaceVertexArray);
     gl.uniform2f(surfaceUniforms.bounds, bounds.width, bounds.height);
-    gl.uniform3f(surfaceUniforms.voidColor, ...voidColor);
+    gl.uniform1f(surfaceUniforms.maxDisplacement, maxDisplacement);
+    gl.uniform1i(surfaceUniforms.physicsField, 1);
+    gl.uniform2f(
+      surfaceUniforms.physicsGrid,
+      HERO_FIELD_COLUMNS,
+      HERO_FIELD_ROWS,
+    );
+    gl.uniform3f(
+      surfaceUniforms.voidColor,
+      voidColor[0],
+      voidColor[1],
+      voidColor[2],
+    );
     gl.drawArrays(gl.TRIANGLE_FAN, 0, surfaceVertexCount);
 
     gl.enable(gl.BLEND);
@@ -742,7 +924,7 @@ export function createKineticWebglRenderer(
     gl.bindTexture(gl.TEXTURE_2D, glyphResources.texture);
     gl.uniform1i(glyphUniforms.atlas, 0);
     gl.uniform1f(glyphUniforms.atlasColumns, glyphResources.atlas.columns);
-    gl.uniform3f(glyphUniforms.bone, ...bone);
+    gl.uniform3f(glyphUniforms.bone, bone[0], bone[1], bone[2]);
     gl.uniform2f(glyphUniforms.bounds, bounds.width, bounds.height);
     gl.uniform1f(glyphUniforms.dotSlot, glyphResources.atlas.dotSlot);
     gl.uniform1f(glyphUniforms.elapsedSeconds, frame.elapsed / 1000);
@@ -751,11 +933,23 @@ export function createKineticWebglRenderer(
       glyphResources.atlas.glyphWidth,
       glyphResources.atlas.glyphHeight,
     );
+    gl.uniform2f(
+      glyphUniforms.radiusRange,
+      radiusRange.inner,
+      radiusRange.outer,
+    );
+    gl.uniform1f(glyphUniforms.maxDisplacement, maxDisplacement);
+    gl.uniform1i(glyphUniforms.physicsField, 1);
+    gl.uniform2f(
+      glyphUniforms.physicsGrid,
+      HERO_FIELD_COLUMNS,
+      HERO_FIELD_ROWS,
+    );
     gl.uniform3f(
       glyphUniforms.pointer,
-      pointer.x,
-      pointer.y,
-      pointer.active ? pointer.radius : 0,
+      pointerActive ? (pointer?.x ?? 0) : 0,
+      pointerActive ? (pointer?.y ?? 0) : 0,
+      pointerActive ? (pointer?.radius ?? 0) : 0,
     );
     gl.uniform2f(
       glyphUniforms.surfaceCenter,
@@ -770,6 +964,9 @@ export function createKineticWebglRenderer(
     );
 
     gl.bindVertexArray(null);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.stencilMask(0xff);
   };
@@ -789,6 +986,7 @@ export function createKineticWebglRenderer(
     gl.deleteVertexArray(glyphVertexArray);
     gl.deleteBuffer(glyphQuadBuffer);
     gl.deleteBuffer(glyphInstanceBuffer);
+    gl.deleteTexture(physicsTexture);
   };
 
   return { destroy, render };

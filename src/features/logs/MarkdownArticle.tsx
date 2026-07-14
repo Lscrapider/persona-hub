@@ -5,10 +5,13 @@ import { containsCjk } from "@/lib/typography";
 
 type MarkdownArticleProps = Readonly<{
   blocks: readonly MarkdownBlock[];
+  logId: string;
 }>;
 
 type MarkdownHeadingProps = Readonly<{
+  blockNumber: string;
   level: 2 | 3 | 4;
+  runtimeTarget: string;
   text: string;
   children: ReactNode;
 }>;
@@ -79,56 +82,104 @@ function renderInline(text: string): ReactNode {
   return nodes.length ? nodes : text;
 }
 
-function MarkdownHeading({ level, text, children }: MarkdownHeadingProps) {
+function MarkdownHeading({
+  blockNumber,
+  level,
+  runtimeTarget,
+  text,
+  children,
+}: MarkdownHeadingProps) {
   const hasCjkTitle = containsCjk(text);
+  const runtimeProps = {
+    "data-log-block": blockNumber,
+    "data-runtime-hover-action": "inspect",
+    "data-runtime-target": runtimeTarget,
+  } as const;
 
   if (level === 2) {
-    return <h4 data-cjk-heading={hasCjkTitle || undefined}>{children}</h4>;
+    return (
+      <h4 data-cjk-heading={hasCjkTitle || undefined} {...runtimeProps}>
+        {children}
+      </h4>
+    );
   }
 
   if (level === 3) {
-    return <h5 data-cjk-heading={hasCjkTitle || undefined}>{children}</h5>;
+    return (
+      <h5 data-cjk-heading={hasCjkTitle || undefined} {...runtimeProps}>
+        {children}
+      </h5>
+    );
   }
 
-  return <h6 data-cjk-heading={hasCjkTitle || undefined}>{children}</h6>;
+  return (
+    <h6 data-cjk-heading={hasCjkTitle || undefined} {...runtimeProps}>
+      {children}
+    </h6>
+  );
 }
 
-export function MarkdownArticle({ blocks }: MarkdownArticleProps) {
+export function MarkdownArticle({ blocks, logId }: MarkdownArticleProps) {
   return (
     <div className="markdown-article">
       {blocks.map((block, index) => {
         const key = `${block.type}-${index.toString()}`;
+        const blockNumber = (index + 1).toString().padStart(2, "0");
+        const runtimeTarget = `logs/${logId}/block-${blockNumber}`;
+        const runtimeProps = {
+          "data-log-block": blockNumber,
+          "data-runtime-hover-action": "inspect",
+          "data-runtime-target": runtimeTarget,
+        } as const;
 
         switch (block.type) {
           case "heading":
             return (
-              <MarkdownHeading key={key} level={block.level} text={block.text}>
+              <MarkdownHeading
+                blockNumber={blockNumber}
+                key={key}
+                level={block.level}
+                runtimeTarget={runtimeTarget}
+                text={block.text}
+              >
                 {renderInline(block.text)}
               </MarkdownHeading>
             );
           case "paragraph":
-            return <p key={key}>{renderInline(block.text)}</p>;
+            return (
+              <p key={key} {...runtimeProps}>
+                {renderInline(block.text)}
+              </p>
+            );
           case "list": {
             const items = block.items.map((item, itemIndex) => (
               <li key={`${key}-${itemIndex.toString()}`}>{renderInline(item)}</li>
             ));
 
             return block.ordered ? (
-              <ol key={key}>{items}</ol>
+              <ol key={key} {...runtimeProps}>
+                {items}
+              </ol>
             ) : (
-              <ul key={key}>{items}</ul>
+              <ul key={key} {...runtimeProps}>
+                {items}
+              </ul>
             );
           }
           case "quote":
-            return <blockquote key={key}>{renderInline(block.text)}</blockquote>;
+            return (
+              <blockquote key={key} {...runtimeProps}>
+                {renderInline(block.text)}
+              </blockquote>
+            );
           case "code":
             return (
-              <pre key={key}>
+              <pre key={key} {...runtimeProps}>
                 <code data-language={block.language}>{block.code}</code>
               </pre>
             );
           case "rule":
-            return <hr key={key} />;
+            return <hr key={key} {...runtimeProps} />;
         }
       })}
     </div>
