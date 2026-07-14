@@ -1,53 +1,6 @@
 [
   {
     "id": "01",
-    "slug": "finance-management-ai",
-    "title": "理财分析 AI",
-    "status": "IN PROGRESS",
-    "year": "FINANCE-01",
-    "summary": "面向个人投资研究的智能理财分析与知识增强系统。",
-    "content": "整合股市行情、财务指标、新闻公告与个人投资知识库，利用多模型 Agent、OCR 和向量检索能力，为用户提供可追溯的结构化投资分析、风险提示与研究参考。",
-    "url": "https://github.com/Lscrapider/financial-management-ai",
-    "stack": [
-      "Spring AI · LangChain · LangGraph",
-      "Python · Sentence Transformers · pgvector",
-      "DeepSeek · Qwen-VL OCR · RabbitMQ"
-    ],
-    "capabilities": [
-      "多源行情数据采集、清洗与定时同步",
-      "OCR 知识库处理、语义检索与向量化存储",
-      "AI Agent 工具调用与结构化投资分析报告"
-    ],
-    "tree": [
-      {
-        "name": "financial-management-ai",
-        "children": [
-          {
-            "name": "backend-java",
-            "detail": "Spring Boot、Spring AI、权限控制、业务编排与数据网关"
-          },
-          {
-            "name": "ai-python",
-            "detail": "LangGraph Agent、OCR、Embedding、向量检索与异步 Worker"
-          },
-          {
-            "name": "frontend-vue",
-            "detail": "Vue 3 管理端、行情看板、知识库与 AI 分析结果展示"
-          },
-          {
-            "name": "database",
-            "detail": "PostgreSQL、pgvector、InfluxDB 与数据迁移脚本"
-          },
-          {
-            "name": "docker",
-            "detail": "Docker Compose 服务编排与本地部署配置"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "02",
     "slug": "urban-sidequest",
     "title": "城市副本",
     "status": "IN PROGRESS",

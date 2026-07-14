@@ -7,3 +7,7 @@ node_modules
 .env.*
 npm-debug.log*
 pnpm-debug.log*
+!.next/
+!.next/**
+!node_modules/
+!node_modules/**

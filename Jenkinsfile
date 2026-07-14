@@ -17,6 +17,29 @@ pipeline {
             }
         }
 
+        stage('Build host artifact') {
+            steps {
+                sh '''
+                    set -eu
+                    for tool in node pnpm docker; do
+                        command -v "$tool" >/dev/null 2>&1 || {
+                            echo "Missing required host tool: $tool" >&2
+                            exit 1
+                        }
+                    done
+                    node --version
+                    test "$(pnpm --version)" = "11.5.2"
+                    docker compose version
+                    export CI=true
+                    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+                    pnpm install --frozen-lockfile
+                    pnpm exec next build --webpack
+                    test -d node_modules
+                    test -d .next
+                '''
+            }
+        }
+
         stage('Validate deployment') {
             steps {
                 sh 'docker compose config --quiet'
