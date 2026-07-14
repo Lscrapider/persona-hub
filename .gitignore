@@ -1,0 +1,23 @@
+# 依赖与包管理器缓存
+node_modules/
+.pnpm-store/
+
+# Next.js 与构建产物
+.next/
+out/
+dist/
+coverage/
+*.tsbuildinfo
+
+# 本地环境与日志
+.env
+.env.*
+!.env.example
+*.log
+
+# IDE、系统与本地工具状态
+.idea/
+.vscode/
+.DS_Store
+.claude/
+.impeccable/
