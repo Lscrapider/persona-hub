@@ -2,6 +2,7 @@
   min-block-size: max(55rem, 100svh);
   overflow: clip;
   padding: 0;
+  scroll-margin-top: 0;
 }
 
 .projects-section .archive-section__inner {
