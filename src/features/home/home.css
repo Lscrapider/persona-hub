@@ -359,10 +359,26 @@
 }
 
 .kinetic-field__canvas {
+  position: absolute;
+  inset: 0;
   display: block;
   inline-size: 100%;
   block-size: 100%;
   font-family: var(--font-mono);
+  pointer-events: none;
+}
+
+.kinetic-field__canvas--webgl {
+  z-index: 1;
+  opacity: 0;
+}
+
+.kinetic-field[data-renderer="webgl"] .kinetic-field__canvas--fallback {
+  opacity: 0;
+}
+
+.kinetic-field[data-renderer="webgl"] .kinetic-field__canvas--webgl {
+  opacity: 1;
 }
 
 .kinetic-field[data-interactive] {

@@ -13,9 +13,12 @@ import {
   type KineticPointer,
   type SceneBounds,
 } from "@/features/home/kineticTypeFieldRenderer";
+import { createKineticWebglRenderer } from "@/features/home/kineticTypeFieldWebglRenderer";
 
-const MAX_ANIMATED_PIXEL_RATIO = 1.5;
+const MAX_ANIMATED_PIXEL_RATIO = 1.25;
 const MAX_STATIC_PIXEL_RATIO = 2;
+const FULL_FRAME_INTERVAL_MS = 1000 / 30;
+const FULL_FRAME_INTERVAL_MARGIN_MS = 1;
 const STATIC_FRAME_ELAPSED = 96_000;
 const EMPTY_POINTER: KineticPointer = {
   active: false,
@@ -33,6 +36,13 @@ type OrbitFieldProps = Readonly<{
   fallback?: boolean;
   mode: EffectMode;
 }>;
+
+type PendingPointer = Readonly<{
+  clientX: number;
+  clientY: number;
+}>;
+
+type RendererKind = "canvas" | "webgl";
 
 function toSceneBounds(width: number, height: number): SceneBounds {
   return {
@@ -90,15 +100,19 @@ function readPalette(canvas: HTMLCanvasElement): KineticPalette {
   };
 }
 
+function getCanvasPixelRatio(pixelRatioCap: number) {
+  return Math.min(
+    Math.max(window.devicePixelRatio || 1, 1),
+    pixelRatioCap,
+  );
+}
+
 function configureCanvas(
   canvas: HTMLCanvasElement,
   bounds: SceneBounds,
   pixelRatioCap: number,
 ) {
-  const pixelRatio = Math.min(
-    Math.max(window.devicePixelRatio || 1, 1),
-    pixelRatioCap,
-  );
+  const pixelRatio = getCanvasPixelRatio(pixelRatioCap);
   const width = Math.max(1, Math.round(bounds.width * pixelRatio));
   const height = Math.max(1, Math.round(bounds.height * pixelRatio));
 
@@ -119,10 +133,16 @@ function configureCanvas(
 }
 
 function OrbitField({ active, fallback = false, mode }: OrbitFieldProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const webglCanvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasFallbackRef = useRef<HTMLCanvasElement>(null);
   const elapsedRef = useRef(0);
   const pointerRef = useRef<KineticPointer>(EMPTY_POINTER);
+  const pendingPointerRef = useRef<PendingPointer | null>(null);
+  const pointerFrameRef = useRef(0);
+  const forceCanvasFallbackRef = useRef(false);
   const [fontEpoch, setFontEpoch] = useState(0);
+  const [rendererEpoch, setRendererEpoch] = useState(0);
+  const [rendererKind, setRendererKind] = useState<RendererKind>("canvas");
   const [isUnavailable, setIsUnavailable] = useState(false);
   const { bounds, sceneRef } = useResponsiveSceneBounds();
   const isInteractive = active && mode === "full" && !fallback;
@@ -148,48 +168,142 @@ function OrbitField({ active, fallback = false, mode }: OrbitFieldProps) {
   }, []);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
+    return () => {
+      if (pointerFrameRef.current) {
+        window.cancelAnimationFrame(pointerFrameRef.current);
+      }
+    };
+  }, []);
 
-    if (!canvas) {
+  useEffect(() => {
+    if (!isInteractive) {
+      pendingPointerRef.current = null;
+      pointerRef.current = EMPTY_POINTER;
+    }
+  }, [isInteractive]);
+
+  useEffect(() => {
+    const fallbackCanvas = canvasFallbackRef.current;
+
+    if (!fallbackCanvas) {
       return;
     }
 
-    const configuredCanvas = configureCanvas(
-      canvas,
-      bounds,
-      isInteractive ? MAX_ANIMATED_PIXEL_RATIO : MAX_STATIC_PIXEL_RATIO,
-    );
+    const drawCanvasScene = () => {
+      const configuredCanvas = configureCanvas(
+        fallbackCanvas,
+        bounds,
+        isInteractive ? MAX_ANIMATED_PIXEL_RATIO : MAX_STATIC_PIXEL_RATIO,
+      );
 
-    if (!configuredCanvas) {
-      setIsUnavailable(true);
-      return;
-    }
+      if (!configuredCanvas) {
+        setIsUnavailable(true);
+        return null;
+      }
 
-    setIsUnavailable(false);
+      const { context, pixelRatio } = configuredCanvas;
+      const palette = readPalette(fallbackCanvas);
+      const fontFamily = window.getComputedStyle(fallbackCanvas).fontFamily;
+      const drawFrame = (elapsed: number) => {
+        drawKineticTypeFieldFrame(context, bounds, {
+          elapsed,
+          fontFamily: fontFamily || "ui-monospace, monospace",
+          mode,
+          palette,
+          pixelRatio,
+          pointer: isInteractive ? pointerRef.current : null,
+        });
+      };
 
-    const { context, pixelRatio } = configuredCanvas;
-    const palette = readPalette(canvas);
-    const fontFamily = window.getComputedStyle(canvas).fontFamily;
-    const drawFrame = (elapsed: number) => {
-      drawKineticTypeFieldFrame(context, bounds, {
-        elapsed,
-        fontFamily: fontFamily || "ui-monospace, monospace",
-        mode,
-        palette,
-        pixelRatio,
-        pointer: isInteractive ? pointerRef.current : null,
-      });
+      return drawFrame;
     };
 
     if (!isInteractive) {
+      const drawFrame = drawCanvasScene();
+
+      if (!drawFrame) {
+        return;
+      }
+
+      setIsUnavailable(false);
+      setRendererKind("canvas");
       drawFrame(STATIC_FRAME_ELAPSED);
       return;
     }
 
+    const webglCanvas = webglCanvasRef.current;
+
+    if (!forceCanvasFallbackRef.current && webglCanvas) {
+      const pixelRatio = getCanvasPixelRatio(MAX_ANIMATED_PIXEL_RATIO);
+      const palette = readPalette(webglCanvas);
+      const fontFamily = window.getComputedStyle(webglCanvas).fontFamily;
+      const renderer = createKineticWebglRenderer(webglCanvas, {
+        bounds,
+        fontFamily: fontFamily || "ui-monospace, monospace",
+        onContextLost: () => {
+          forceCanvasFallbackRef.current = true;
+          setRendererKind("canvas");
+          setRendererEpoch((currentEpoch) => currentEpoch + 1);
+        },
+        pixelRatio,
+      });
+
+      if (renderer) {
+        setIsUnavailable(false);
+        setRendererKind("webgl");
+
+        const startedAt = window.performance.now();
+        let animationFrame = 0;
+        const render = (now: number) => {
+          renderer.render({
+            elapsed: elapsedRef.current + now - startedAt,
+            palette,
+            pointer: pointerRef.current,
+          });
+          animationFrame = window.requestAnimationFrame(render);
+        };
+
+        renderer.render({
+          elapsed: elapsedRef.current,
+          palette,
+          pointer: pointerRef.current,
+        });
+        animationFrame = window.requestAnimationFrame(render);
+
+        return () => {
+          elapsedRef.current += Math.max(
+            0,
+            window.performance.now() - startedAt,
+          );
+          window.cancelAnimationFrame(animationFrame);
+          renderer.destroy();
+        };
+      }
+
+      forceCanvasFallbackRef.current = true;
+    }
+
+    const drawFrame = drawCanvasScene();
+
+    if (!drawFrame) {
+      return;
+    }
+
+    setIsUnavailable(false);
+    setRendererKind("canvas");
+
     const startedAt = window.performance.now();
     let animationFrame = 0;
+    let lastDrawAt = startedAt;
     const render = (now: number) => {
-      drawFrame(elapsedRef.current + now - startedAt);
+      if (
+        now - lastDrawAt >=
+        FULL_FRAME_INTERVAL_MS - FULL_FRAME_INTERVAL_MARGIN_MS
+      ) {
+        drawFrame(elapsedRef.current + now - startedAt);
+        lastDrawAt = now;
+      }
+
       animationFrame = window.requestAnimationFrame(render);
     };
 
@@ -200,28 +314,54 @@ function OrbitField({ active, fallback = false, mode }: OrbitFieldProps) {
       elapsedRef.current += Math.max(0, window.performance.now() - startedAt);
       window.cancelAnimationFrame(animationFrame);
     };
-  }, [active, bounds, fallback, fontEpoch, isInteractive, mode]);
+  }, [bounds, fontEpoch, isInteractive, mode, rendererEpoch]);
 
-  const clearPointer = () => {
-    pointerRef.current = EMPTY_POINTER;
-  };
-  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (!isInteractive || event.pointerType !== "mouse") {
+  const commitPointerPosition = () => {
+    pointerFrameRef.current = 0;
+
+    const pendingPointer = pendingPointerRef.current;
+    const scene = sceneRef.current;
+
+    if (!isInteractive || !pendingPointer || !scene) {
+      pointerRef.current = EMPTY_POINTER;
       return;
     }
 
-    const rect = event.currentTarget.getBoundingClientRect();
+    const rect = scene.getBoundingClientRect();
 
     if (!rect.width || !rect.height) {
+      pointerRef.current = EMPTY_POINTER;
       return;
     }
 
     pointerRef.current = {
       active: true,
       radius: getKineticPointerRadius(bounds),
-      x: ((event.clientX - rect.left) / rect.width) * bounds.width,
-      y: ((event.clientY - rect.top) / rect.height) * bounds.height,
+      x: ((pendingPointer.clientX - rect.left) / rect.width) * bounds.width,
+      y: ((pendingPointer.clientY - rect.top) / rect.height) * bounds.height,
     };
+  };
+
+  const clearPointer = () => {
+    pendingPointerRef.current = null;
+    pointerRef.current = EMPTY_POINTER;
+  };
+
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!isInteractive || event.pointerType !== "mouse") {
+      return;
+    }
+
+    pendingPointerRef.current = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+    };
+
+    if (!pointerFrameRef.current) {
+      pointerFrameRef.current = window.requestAnimationFrame(
+        commitPointerPosition,
+      );
+    }
   };
 
   if (isUnavailable) {
@@ -241,14 +381,20 @@ function OrbitField({ active, fallback = false, mode }: OrbitFieldProps) {
       data-active={active || undefined}
       data-interactive={isInteractive || undefined}
       data-mode={mode}
+      data-renderer={rendererKind}
       onPointerLeave={clearPointer}
       onPointerMove={handlePointerMove}
       ref={sceneRef}
     >
       <canvas
         aria-hidden="true"
-        className="kinetic-field__canvas"
-        ref={canvasRef}
+        className="kinetic-field__canvas kinetic-field__canvas--fallback"
+        ref={canvasFallbackRef}
+      />
+      <canvas
+        aria-hidden="true"
+        className="kinetic-field__canvas kinetic-field__canvas--webgl"
+        ref={webglCanvasRef}
       />
     </div>
   );

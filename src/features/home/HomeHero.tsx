@@ -16,11 +16,13 @@ import { getLocaleArchiveHref } from "@/core/locale";
 
 type HomeHeroProps = Readonly<{
   archiveActionRef: RefObject<HTMLAnchorElement | null>;
+  onSelectProject: (projectId: string) => void;
   revealEnabled: boolean;
 }>;
 
 export function HomeHero({
   archiveActionRef,
+  onSelectProject,
   revealEnabled,
 }: HomeHeroProps) {
   const { content } = useLocaleContent();
@@ -121,6 +123,7 @@ export function HomeHero({
       <CurrentIndex
         heading={site.ui.currentIndex.heading}
         items={currentIndex}
+        onSelectProject={onSelectProject}
         revealEnabled={revealEnabled}
       />
     </section>

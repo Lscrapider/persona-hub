@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 import { CopyReveal } from "@/effects/primitives/CopyReveal";
 import type { LocaleUiCopy, ProjectRecord } from "@/lib/content/types";
 import { containsCjk } from "@/lib/typography";
@@ -10,8 +8,10 @@ import { ProjectTree } from "./ProjectTree";
 
 type ProjectExplorerProps = Readonly<{
   copy: LocaleUiCopy["projects"];
+  onSelectProject: (projectId: string) => void;
   projects: readonly ProjectRecord[];
   revealEnabled: boolean;
+  selectedProjectId: string | null;
 }>;
 
 function getSafeExternalUrl(value: string | undefined) {
@@ -32,12 +32,15 @@ function getSafeExternalUrl(value: string | undefined) {
 
 export function ProjectExplorer({
   copy,
+  onSelectProject,
   projects,
   revealEnabled,
+  selectedProjectId,
 }: ProjectExplorerProps) {
-  const [selectedId, setSelectedId] = useState(projects[0]?.id ?? null);
   const selectedProject =
-    projects.find((project) => project.id === selectedId) ?? projects[0] ?? null;
+    projects.find((project) => project.id === selectedProjectId) ??
+    projects[0] ??
+    null;
 
   if (!selectedProject) {
     return (
@@ -69,7 +72,7 @@ export function ProjectExplorer({
                   aria-pressed={isSelected}
                   className="project-explorer__choice"
                   data-selected={isSelected || undefined}
-                  onClick={() => setSelectedId(project.id)}
+                  onClick={() => onSelectProject(project.id)}
                   type="button"
                 >
                   <span aria-hidden="true" className="project-explorer__choice-id">

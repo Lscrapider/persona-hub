@@ -13,11 +13,11 @@ const MAX_TRACK_FONT_SIZE = 18;
 const TRACK_FONT_SIZE_FACTOR = 0.018;
 const TRACK_FONT_RADIAL_CLEARANCE = 0.66;
 const TRACK_LETTER_SPACING = 4;
-const TRACK_TEXT_OPACITY = 0.9;
+export const TRACK_TEXT_OPACITY = 0.9;
 const OUTER_TRACK_DURATION = 1200;
 const INNER_TRACK_DURATION = 350;
-const CONNECTOR_DOT_OPACITY = 0.28;
-const POINTER_DOT_OPACITY = 0.52;
+export const CONNECTOR_DOT_OPACITY = 0.28;
+export const POINTER_DOT_OPACITY = 0.52;
 const INTERMITTENT_GAP_MULTIPLIER = 3;
 const INTERMITTENT_TRACK_INDICES = new Set([
   1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34, 37,
@@ -66,7 +66,7 @@ type OrbitTrack = Readonly<{
   text: string;
 }>;
 
-type SurfaceArcGeometry = Readonly<{
+export type KineticSurfaceGeometry = Readonly<{
   centerX: number;
   centerY: number;
   endAngle: number;
@@ -74,6 +74,22 @@ type SurfaceArcGeometry = Readonly<{
   radius: number;
   startAngle: number;
   startX: number;
+}>;
+
+export type KineticGlyphInstance = Readonly<{
+  baseAngle: number;
+  character: string;
+  direction: 1 | -1;
+  duration: number;
+  isConnector: boolean;
+  phase: number;
+  radius: number;
+}>;
+
+export type KineticSceneLayout = Readonly<{
+  baseFontSize: number;
+  glyphs: readonly KineticGlyphInstance[];
+  surface: KineticSurfaceGeometry;
 }>;
 
 type OrbitGeometry = Readonly<{
@@ -95,7 +111,7 @@ type OrbitGlyphLayout = Readonly<{
 type SceneGeometry = Readonly<{
   bounds: SceneBounds;
   orbits: OrbitGeometry[];
-  surfaceArc: SurfaceArcGeometry;
+  surfaceArc: KineticSurfaceGeometry;
 }>;
 
 type TextLayout = Readonly<{
@@ -199,7 +215,7 @@ const ORBIT_TRACKS: readonly OrbitTrack[] = Array.from(
   },
 );
 
-function getSurfaceArc(bounds: SceneBounds): SurfaceArcGeometry {
+function getSurfaceArc(bounds: SceneBounds): KineticSurfaceGeometry {
   const { height, width } = bounds;
   const startX = width * SURFACE_ENTRY_X_FACTOR;
   const endY = height * SURFACE_EXIT_Y_FACTOR;
@@ -322,7 +338,7 @@ function isConnectorCharacter(character: string) {
   return character === "·";
 }
 
-function getTrackFont(fontSize: number, fontFamily: string) {
+export function getKineticTrackFont(fontSize: number, fontFamily: string) {
   return "500 " + fontSize + "px " + fontFamily;
 }
 
@@ -352,7 +368,7 @@ function getTextLayout(
   }
 
   const glyphWidths = new Map<string, number>();
-  context.font = getTrackFont(baseFontSize, fontFamily);
+  context.font = getKineticTrackFont(baseFontSize, fontFamily);
   const getAngularAdvance = (
     character: string,
     radius: number,
@@ -426,6 +442,47 @@ function getTextLayout(
   };
 
   return cachedTextLayout;
+}
+
+export function getKineticSceneLayout(
+  context: CanvasRenderingContext2D,
+  bounds: SceneBounds,
+  fontFamily: string,
+): KineticSceneLayout {
+  const geometry = getSceneGeometry(bounds);
+  const baseFontSize = getBaseTrackFontSize(geometry);
+  const textLayout = getTextLayout(
+    context,
+    geometry,
+    baseFontSize,
+    fontFamily,
+    TRACK_LETTER_SPACING,
+  );
+  const glyphs = textLayout.tracks.flatMap(({ glyphs: trackGlyphs, orbit }) =>
+    trackGlyphs.flatMap((glyph): KineticGlyphInstance[] => {
+      if (!isDrawableCharacter(glyph.character)) {
+        return [];
+      }
+
+      return [
+        {
+          baseAngle: Math.atan2(glyph.sine, glyph.cosine),
+          character: glyph.character,
+          direction: orbit.track.direction,
+          duration: orbit.track.duration,
+          isConnector: isConnectorCharacter(glyph.character),
+          phase: orbit.track.phase,
+          radius: orbit.radius,
+        },
+      ];
+    }),
+  );
+
+  return {
+    baseFontSize,
+    glyphs,
+    surface: geometry.surfaceArc,
+  };
 }
 
 function drawTrackText(
@@ -524,7 +581,7 @@ function drawTracks(
   const baseFontSize = getBaseTrackFontSize(geometry);
 
   context.fillStyle = frame.palette.bone;
-  context.font = getTrackFont(baseFontSize, frame.fontFamily);
+  context.font = getKineticTrackFont(baseFontSize, frame.fontFamily);
   context.globalAlpha = TRACK_TEXT_OPACITY;
   context.textAlign = "center";
   context.textBaseline = "middle";

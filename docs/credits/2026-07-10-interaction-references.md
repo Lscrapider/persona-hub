@@ -1,13 +1,13 @@
 # Scra Atlas interaction references and sources
 
 **Status:** current
-**Updated:** 2026-07-10
+**Updated:** 2026-07-14
 
 ## Visual-reference boundary
 
 The user provided screenshots during this task. They may inform only the approved single-page archive's hierarchy, dynamic language, and broad composition.
 
-They are not implementation sources. Scra Atlas does not reuse or recreate their brand identity, names, copy, layout ratios, component shapes, source code, assets, or animation implementation. The application uses original Scra Atlas content and an independently implemented semantic-DOM/Canvas scene.
+They are not implementation sources. Scra Atlas does not reuse or recreate their brand identity, names, copy, layout ratios, component shapes, source code, assets, or animation implementation. The application uses original Scra Atlas content and an independently implemented semantic-DOM word-field scene.
 
 The generated files below are internal direction artifacts, not publication assets:
 
@@ -16,11 +16,11 @@ The generated files below are internal direction artifacts, not publication asse
 
 The user also supplied the former Scra Atlas Home design on 2026-07-10. Its own bone information field and right off-canvas curved word-field composition is restored as an internal product direction. This does not authorize copying any third-party reference material that may have informed it.
 
-A later user-provided reference on 2026-07-10 demonstrated the desired density, muted light type treatment, and overall coverage of a dark text field. It informs only those qualities of the independently authored Canvas scene. Scra Atlas keeps a half-circle boundary and derives its tracks from that boundary's own curvature; it does not copy the reference's circular track geometry, wording, layout, visual assets, code, animation timings, or branding.
+A later user-provided reference on 2026-07-10 demonstrated the desired density, muted light type treatment, and overall coverage of a dark text field. It informs only those qualities of the independently authored scene. Scra Atlas keeps a half-circle boundary and derives its tracks from that boundary's own curvature; it does not copy the reference's circular track geometry, wording, layout, visual assets, code, animation timings, or branding.
 
 ## External interaction reference
 
-The Content Architecture public page was reviewed on 2026-07-10 as a high-level interaction and renderer-class reference. Its public material and source are not copied. The user explicitly approved a Hero-only Canvas renderer after this review.
+The Content Architecture public page was reviewed on 2026-07-10 as a high-level interaction and renderer-class reference. Its public material and source are not copied. The initial Hero-only Canvas renderer was upgraded on 2026-07-14 to a bounded WebGL2 glyph-atlas renderer because the user prioritized smooth pointer response and display-rate motion. The separately recorded 2026-07-14 reference note describes that implementation decision.
 
 Allowed influence:
 
@@ -28,7 +28,7 @@ Allowed influence:
 - scroll and state can reveal a technical archive;
 - real system structure is better evidence than decorative fake logs;
 - typography, routes, and rules can carry technical character without a space or terminal theme.
-- one Canvas 2D frame can be an appropriate original implementation strategy for a dense decorative word field.
+- a bounded glyph-atlas renderer can be an appropriate original implementation strategy for a dense decorative word field.
 
 Prohibited influence:
 

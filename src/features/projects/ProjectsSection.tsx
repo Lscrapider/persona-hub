@@ -5,9 +5,17 @@ import { ProjectExplorer } from "./ProjectExplorer";
 
 import "./projects.css";
 
-type ProjectsSectionProps = Readonly<{ revealEnabled: boolean }>;
+type ProjectsSectionProps = Readonly<{
+  onSelectProject: (projectId: string) => void;
+  revealEnabled: boolean;
+  selectedProjectId: string | null;
+}>;
 
-export function ProjectsSection({ revealEnabled }: ProjectsSectionProps) {
+export function ProjectsSection({
+  onSelectProject,
+  revealEnabled,
+  selectedProjectId,
+}: ProjectsSectionProps) {
   const { content } = useLocaleContent();
   const { archive, site } = content;
 
@@ -20,8 +28,10 @@ export function ProjectsSection({ revealEnabled }: ProjectsSectionProps) {
     >
       <ProjectExplorer
         copy={site.ui.projects}
+        onSelectProject={onSelectProject}
         projects={archive.projects}
         revealEnabled={revealEnabled}
+        selectedProjectId={selectedProjectId}
       />
     </ArchiveSection>
   );

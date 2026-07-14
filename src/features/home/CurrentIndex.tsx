@@ -11,10 +11,16 @@ type CurrentIndexItem = Readonly<{
 type CurrentIndexProps = Readonly<{
   heading: string;
   items: readonly CurrentIndexItem[];
+  onSelectProject: (projectId: string) => void;
   revealEnabled: boolean;
 }>;
 
-export function CurrentIndex({ heading, items, revealEnabled }: CurrentIndexProps) {
+export function CurrentIndex({
+  heading,
+  items,
+  onSelectProject,
+  revealEnabled,
+}: CurrentIndexProps) {
   return (
     <section className="current-index" aria-labelledby="current-index-title">
       <div className="current-index__heading">
@@ -26,7 +32,24 @@ export function CurrentIndex({ heading, items, revealEnabled }: CurrentIndexProp
       <ol className="current-index__list">
         {items.map((item) => (
           <li className="current-index__item" key={item.id}>
-            <a className="current-index__link" href={item.href}>
+            <a
+              className="current-index__link"
+              href={item.href}
+              onClick={(event) => {
+                if (
+                  event.button !== 0 ||
+                  event.metaKey ||
+                  event.altKey ||
+                  event.ctrlKey ||
+                  event.shiftKey
+                ) {
+                  return;
+                }
+
+                event.preventDefault();
+                onSelectProject(item.id);
+              }}
+            >
               <span className="current-index__number">
                 <CopyReveal enabled={revealEnabled} text={item.id} />
               </span>
