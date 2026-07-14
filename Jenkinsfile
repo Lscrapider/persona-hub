@@ -27,7 +27,7 @@ pipeline {
                             exit 1
                         }
                     done
-                    node --version
+                    node -e 'const [major, minor] = process.versions.node.split(".").map(Number); if (major !== 22 || minor < 18) { console.error(`Node ${process.versions.node} does not satisfy >=22.18 <23`); process.exit(1); }'
                     test "$(pnpm --version)" = "11.5.2"
                     docker compose version
                     export CI=true
