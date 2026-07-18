@@ -125,6 +125,18 @@ function LocalizedHomeExperience() {
           />
           <LogsSection revealEnabled={revealEnabled} />
         </main>
+        <footer aria-label="网站备案信息" className="site-record">
+          <a
+            aria-label="京ICP备2026043650号（在新窗口打开）"
+            className="site-record__link"
+            href="https://beian.miit.gov.cn/"
+            lang="zh-Hans"
+            rel="noreferrer"
+            target="_blank"
+          >
+            京ICP备2026043650号
+          </a>
+        </footer>
         <div className="archive-controls">
           <LocaleControl />
           <EffectModeControl />
