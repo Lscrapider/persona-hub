@@ -1,0 +1,30 @@
+:root {
+  --color-stage: oklch(0.08 0 0);
+  --color-stage-soft: oklch(0.12 0.006 25);
+  --color-surface: oklch(0.15 0.01 25);
+  --color-action: oklch(0.58 0.225 28);
+  --color-action-deep: oklch(0.39 0.15 27);
+  --color-print: oklch(0.93 0.012 78);
+  --color-muted: oklch(0.68 0.018 60);
+  --color-route: oklch(0.72 0.13 186);
+  --color-line: oklch(0.31 0.01 55);
+
+  --font-display: var(--font-league-gothic), "Arial Narrow", "PingFang SC",
+    "Hiragino Sans GB", sans-serif;
+  --font-body: var(--font-manrope), "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", system-ui, sans-serif;
+
+  --space-page: clamp(1.9rem, 3.4vw, 3.25rem);
+  --space-section: clamp(5rem, 10vw, 9rem);
+  --content-max: 82rem;
+
+  --duration-fast: 160ms;
+  --duration-base: 320ms;
+  --duration-scene: 1150ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --layer-stage: 0;
+  --layer-ui: 10;
+  --layer-panel: 20;
+  --layer-transition: 40;
+}

@@ -1,0 +1,321 @@
+<div id="scra-interaction-directions">
+  <div class="viz-grid cards">
+    <article class="card">
+      <p class="label">A · SCROLL COMPILER</p>
+      <h3>滚动就是编译</h3>
+      <div class="motion-stage compiler-stage" data-demo="compiler" role="application" aria-label="滚动编译交互演示">
+        <div class="stage-meta"><span>atlas.dev</span><span data-compiler-status>INIT 00%</span></div>
+        <strong class="scene-title">SCRA ATLAS</strong>
+        <div class="compile-track" aria-hidden="true">
+          <span data-build-step="0">INDEX</span>
+          <span data-build-step="1">TIMELINE</span>
+          <span data-build-step="2">PROJECTS</span>
+          <span data-build-step="3">LOGS</span>
+        </div>
+        <div class="compile-wave" aria-hidden="true"></div>
+        <div class="stage-terminal" data-compiler-terminal>&gt; waiting for scroll input_</div>
+      </div>
+      <p class="text-small text-muted">在画面内滚动或点击：页面内容按章节 mount / resolve / render。</p>
+      <button type="button" class="btn btn-block" data-choice="scroll-compiler" onclick="selectScraDirection(this)">选择滚动编译</button>
+    </article>
+
+    <article class="card">
+      <p class="label">B · POINTER DEBUGGER</p>
+      <h3>指针就是调试探针</h3>
+      <div class="motion-stage debugger-stage" data-demo="debugger" role="application" aria-label="指针调试交互演示">
+        <div class="stage-meta"><span>inspect.mode</span><span data-debug-status>IDLE</span></div>
+        <strong class="scene-title">SCRA ATLAS</strong>
+        <div class="source-field" aria-hidden="true">
+          <span>route.resolve()</span><span>project.mount()</span><span>timeline.trace()</span>
+          <span>logs.render()</span><span>signal.observe()</span><span>archive.sync()</span>
+        </div>
+        <div class="probe" aria-hidden="true"></div>
+        <div class="inspector" data-inspector>MOVE POINTER TO INSPECT</div>
+      </div>
+      <p class="text-small text-muted">移动指针：局部文字、依赖关系和隐藏注释被“调试”出来。</p>
+      <button type="button" class="btn btn-block" data-choice="pointer-debugger" onclick="selectScraDirection(this)">选择指针调试</button>
+    </article>
+
+    <article class="card">
+      <p class="label">C · LIVING RUNTIME</p>
+      <h3>整站是一个运行时</h3>
+      <div class="motion-stage runtime-stage" data-demo="runtime" role="application" aria-label="全站运行时交互演示">
+        <div class="stage-meta"><span>runtime.full</span><span data-runtime-status>READY</span></div>
+        <strong class="scene-title">SCRA ATLAS</strong>
+        <div class="runtime-map" aria-hidden="true">
+          <span class="runtime-node node-index" data-runtime-node>INDEX</span>
+          <span class="runtime-node node-timeline" data-runtime-node>TIMELINE</span>
+          <span class="runtime-node node-projects" data-runtime-node>PROJECTS</span>
+          <span class="runtime-node node-logs" data-runtime-node>LOGS</span>
+          <i class="runtime-line line-one"></i>
+          <i class="runtime-line line-two"></i>
+          <i class="runtime-line line-three"></i>
+        </div>
+        <div class="runtime-cursor" aria-hidden="true"></div>
+        <div class="stage-terminal" data-runtime-terminal>&gt; move + scroll to start runtime_</div>
+      </div>
+      <p class="text-small text-muted">推荐：滚动负责全局构建，指针负责局部调试，每个模块再有专属响应。</p>
+      <button type="button" class="btn btn-primary btn-block" data-choice="living-runtime" onclick="selectScraDirection(this)">选择全站运行时</button>
+    </article>
+  </div>
+</div>
+
+<style>
+  #scra-interaction-directions {
+    --scene-bg: var(--background, var(--bg-primary));
+    --scene-fg: var(--foreground, var(--text-primary));
+    --scene-muted: var(--muted-foreground, var(--text-secondary));
+    --scene-line: var(--border);
+    --scene-signal: var(--viz-series-1, var(--warning));
+    color: var(--scene-fg);
+  }
+
+  #scra-interaction-directions .motion-stage {
+    --progress: 0;
+    --px: 50%;
+    --py: 50%;
+    position: relative;
+    min-block-size: 18rem;
+    margin-block: 1rem;
+    padding: 1rem;
+    overflow: hidden;
+    background: color-mix(in oklch, var(--scene-fg) 5%, var(--scene-bg));
+    color: var(--scene-fg);
+    cursor: crosshair;
+    touch-action: pan-y;
+  }
+
+  #scra-interaction-directions .stage-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--scene-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  #scra-interaction-directions .scene-title {
+    display: block;
+    max-inline-size: 10ch;
+    margin-block: 2.5rem 1.5rem;
+    font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+    font-stretch: condensed;
+    font-weight: 500;
+    letter-spacing: -0.04em;
+  }
+
+  #scra-interaction-directions .stage-terminal,
+  #scra-interaction-directions .inspector {
+    position: absolute;
+    inset-inline: 1rem;
+    inset-block-end: 1rem;
+    padding-block-start: 0.75rem;
+    border-block-start: 1px solid var(--scene-line);
+    color: var(--scene-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  #scra-interaction-directions .compile-track {
+    display: grid;
+    gap: 0.55rem;
+    inline-size: min(18rem, 78%);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  #scra-interaction-directions .compile-track span {
+    padding-block: 0.25rem;
+    border-block-end: 1px solid var(--scene-line);
+    color: var(--scene-muted);
+    transition: color 180ms ease, transform 260ms ease;
+  }
+
+  #scra-interaction-directions .compile-track span.is-active {
+    color: var(--scene-fg);
+    transform: translateX(0.75rem);
+  }
+
+  #scra-interaction-directions .compile-wave {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: calc(var(--progress) * 100% - 12%);
+    inline-size: 24%;
+    background: linear-gradient(90deg, transparent, color-mix(in oklch, var(--scene-signal) 20%, transparent), transparent);
+    pointer-events: none;
+    transition: inset-inline-start 260ms ease;
+  }
+
+  #scra-interaction-directions .source-field {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    color: var(--scene-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    transition: transform 180ms ease;
+    transform: translate(calc((50% - var(--px)) * 0.035), calc((50% - var(--py)) * 0.035));
+  }
+
+  #scra-interaction-directions .probe,
+  #scra-interaction-directions .runtime-cursor {
+    position: absolute;
+    inset-inline-start: var(--px);
+    inset-block-start: var(--py);
+    inline-size: 4rem;
+    block-size: 4rem;
+    border: 1px solid var(--scene-signal);
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    transition: inline-size 180ms ease, block-size 180ms ease;
+  }
+
+  #scra-interaction-directions .debugger-stage.is-inspecting .probe {
+    inline-size: 6rem;
+    block-size: 6rem;
+  }
+
+  #scra-interaction-directions .runtime-map {
+    position: relative;
+    min-block-size: 9rem;
+    margin-block-start: 1rem;
+  }
+
+  #scra-interaction-directions .runtime-node {
+    position: absolute;
+    z-index: 2;
+    padding: 0.35rem;
+    background: var(--scene-bg);
+    color: var(--scene-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    transition: color 180ms ease, transform 260ms ease;
+  }
+
+  #scra-interaction-directions .runtime-node.is-active {
+    color: var(--scene-fg);
+    transform: translateY(-0.35rem);
+  }
+
+  #scra-interaction-directions .node-index { inset-inline-start: 4%; inset-block-start: 8%; }
+  #scra-interaction-directions .node-timeline { inset-inline-end: 5%; inset-block-start: 15%; }
+  #scra-interaction-directions .node-projects { inset-inline-start: 17%; inset-block-end: 8%; }
+  #scra-interaction-directions .node-logs { inset-inline-end: 12%; inset-block-end: 2%; }
+
+  #scra-interaction-directions .runtime-line {
+    position: absolute;
+    z-index: 1;
+    block-size: 1px;
+    background: var(--scene-line);
+    transform-origin: left;
+    transition: background-color 180ms ease, transform 260ms ease;
+  }
+
+  #scra-interaction-directions .line-one { inset-inline-start: 16%; inset-block-start: 28%; inline-size: 62%; transform: rotate(2deg); }
+  #scra-interaction-directions .line-two { inset-inline-start: 18%; inset-block-start: 34%; inline-size: 48%; transform: rotate(36deg); }
+  #scra-interaction-directions .line-three { inset-inline-start: 34%; inset-block-start: 77%; inline-size: 45%; transform: rotate(-8deg); }
+
+  #scra-interaction-directions .runtime-stage.is-running .runtime-line {
+    background: color-mix(in oklch, var(--scene-signal) 70%, var(--scene-line));
+  }
+
+  @media (max-width: 52rem) {
+    #scra-interaction-directions .source-field {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #scra-interaction-directions *,
+    #scra-interaction-directions *::before,
+    #scra-interaction-directions *::after {
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+
+<script>
+  (() => {
+    const root = document.getElementById('scra-interaction-directions');
+    if (!root) return;
+
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+    const pointerVars = (stage, event) => {
+      const rect = stage.getBoundingClientRect();
+      const x = clamp((event.clientX - rect.left) / rect.width, 0, 1);
+      const y = clamp((event.clientY - rect.top) / rect.height, 0, 1);
+      stage.style.setProperty('--px', `${x * 100}%`);
+      stage.style.setProperty('--py', `${y * 100}%`);
+      return { x, y };
+    };
+
+    const compiler = root.querySelector('[data-demo="compiler"]');
+    let compileProgress = 0;
+    const updateCompiler = (next) => {
+      compileProgress = clamp(next, 0, 1);
+      compiler.style.setProperty('--progress', String(compileProgress));
+      const activeIndex = Math.min(3, Math.floor(compileProgress * 4));
+      compiler.querySelectorAll('[data-build-step]').forEach((step, index) => {
+        step.classList.toggle('is-active', index <= activeIndex);
+      });
+      compiler.querySelector('[data-compiler-status]').textContent = `BUILD ${Math.round(compileProgress * 100).toString().padStart(2, '0')}%`;
+      const commands = ['init archive', 'resolve timeline', 'mount projects', 'render logs'];
+      compiler.querySelector('[data-compiler-terminal]').textContent = `> ${commands[activeIndex]} ${compileProgress >= 1 ? '✓' : '...'}`;
+    };
+    compiler.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      updateCompiler(compileProgress + Math.sign(event.deltaY) * 0.12);
+    }, { passive: false });
+    compiler.addEventListener('click', (event) => {
+      const rect = compiler.getBoundingClientRect();
+      updateCompiler((event.clientX - rect.left) / rect.width);
+    });
+    updateCompiler(0);
+
+    const debuggerStage = root.querySelector('[data-demo="debugger"]');
+    const debugModules = ['INDEX / bootstrap.ts', 'TIMELINE / history.trace', 'PROJECTS / urban-01', 'LOGS / engineering.md'];
+    debuggerStage.addEventListener('pointermove', (event) => {
+      const { x } = pointerVars(debuggerStage, event);
+      const index = Math.min(debugModules.length - 1, Math.floor(x * debugModules.length));
+      debuggerStage.classList.add('is-inspecting');
+      debuggerStage.querySelector('[data-debug-status]').textContent = 'INSPECTING';
+      debuggerStage.querySelector('[data-inspector]').textContent = `PROBE → ${debugModules[index]}`;
+    });
+    debuggerStage.addEventListener('pointerleave', () => {
+      debuggerStage.classList.remove('is-inspecting');
+      debuggerStage.querySelector('[data-debug-status]').textContent = 'IDLE';
+      debuggerStage.querySelector('[data-inspector]').textContent = 'MOVE POINTER TO INSPECT';
+    });
+
+    const runtime = root.querySelector('[data-demo="runtime"]');
+    let runtimeProgress = 0;
+    const updateRuntime = (next) => {
+      runtimeProgress = clamp(next, 0, 1);
+      runtime.classList.toggle('is-running', runtimeProgress > 0);
+      const activeIndex = Math.min(3, Math.floor(runtimeProgress * 4));
+      runtime.querySelectorAll('[data-runtime-node]').forEach((node, index) => {
+        node.classList.toggle('is-active', index <= activeIndex);
+      });
+      runtime.querySelector('[data-runtime-status]').textContent = runtimeProgress >= 1 ? 'STABLE' : runtimeProgress > 0 ? 'RUNNING' : 'READY';
+      runtime.querySelector('[data-runtime-terminal]').textContent = `> runtime.sync(${Math.round(runtimeProgress * 100)}) ${runtimeProgress >= 1 ? '✓' : '...'}`;
+    };
+    runtime.addEventListener('pointermove', (event) => {
+      const { x } = pointerVars(runtime, event);
+      updateRuntime(Math.max(runtimeProgress, x));
+    });
+    runtime.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      updateRuntime(runtimeProgress + Math.sign(event.deltaY) * 0.1);
+    }, { passive: false });
+    updateRuntime(0);
+
+    window.selectScraDirection = (button) => {
+      root.querySelectorAll('[data-choice]').forEach((candidate) => {
+        const selected = candidate === button;
+        candidate.setAttribute('aria-pressed', String(selected));
+      });
+      if (typeof window.toggleSelect === 'function') {
+        window.toggleSelect(button);
+      }
+    };
+  })();
+</script>
