@@ -76,6 +76,7 @@ export function TimelineRail({ labels, records, revealEnabled }: TimelineRailPro
               <article
                 className="timeline-rail__record"
                 data-active={isActive || undefined}
+                data-motion-active={isActive || undefined}
                 data-runtime-hover-action="inspect"
                 data-runtime-target={`timeline/${record.id}`}
                 data-side={side}
@@ -86,6 +87,7 @@ export function TimelineRail({ labels, records, revealEnabled }: TimelineRailPro
                   aria-label={`${labels.focusLabel} ${record.period}: ${record.title}`}
                   aria-pressed={isActive}
                   className="timeline-rail__marker"
+                  data-webgl-anchor="timeline-node"
                   data-runtime-activate-action="pin"
                   data-runtime-hover-action="inspect"
                   data-runtime-target={`timeline/${record.id}`}

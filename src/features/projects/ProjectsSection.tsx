@@ -28,6 +28,7 @@ export function ProjectsSection({
     >
       <ProjectExplorer
         copy={site.ui.projects}
+        key={selectedProjectId ?? "default-project"}
         onSelectProject={onSelectProject}
         projects={archive.projects}
         revealEnabled={revealEnabled}

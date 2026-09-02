@@ -1,0 +1,43 @@
+.archive-webgl-stage {
+  position: fixed;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  contain: strict;
+  pointer-events: none;
+}
+
+.archive-webgl-stage__canvas {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  font-family: var(--font-mono);
+}
+
+.archive-experience[data-webgl-stage="initializing"]
+  .archive-webgl-stage,
+.archive-experience[data-webgl-stage="fallback"] .archive-webgl-stage,
+.archive-experience[data-webgl-stage="lost"] .archive-webgl-stage {
+  opacity: 0;
+}
+
+.archive-experience[data-webgl-stage="ready"] .archive-webgl-stage {
+  opacity: 1;
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+
+.archive-experience[data-webgl-stage="fallback"] .kinetic-field,
+.archive-experience[data-webgl-stage="lost"] .kinetic-field {
+  background: var(--color-void);
+  clip-path: ellipse(72% 110% at 109% 5%);
+}
+
+html[data-effect-mode="static"] .archive-webgl-stage {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .archive-webgl-stage {
+    transition: none;
+  }
+}

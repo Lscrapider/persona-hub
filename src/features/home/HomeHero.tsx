@@ -73,49 +73,60 @@ export function HomeHero({
           </p>
         </div>
 
-        <dl className="home-hero__status">
-          <div>
-            <dt>
-              <CopyReveal enabled={revealEnabled} text={site.ui.hero.statusLabel} />
-            </dt>
-            <dd>
-              <CopyReveal enabled={revealEnabled} text={site.status.status} />
-            </dd>
-          </div>
-          <div>
-            <dt>
-              <CopyReveal enabled={revealEnabled} text={site.ui.hero.focusLabel} />
-            </dt>
-            <dd>
-              <CopyReveal enabled={revealEnabled} text={site.status.focus} />
-            </dd>
-          </div>
-          <div>
-            <dt>
-              <CopyReveal enabled={revealEnabled} text={site.ui.hero.updatedLabel} />
-            </dt>
-            <dd>
-              <CopyReveal enabled={revealEnabled} text={site.status.updated} />
-            </dd>
-          </div>
-        </dl>
+        <div className="home-hero__utility">
+          <dl className="home-hero__status">
+            <div>
+              <dt>
+                <CopyReveal
+                  enabled={revealEnabled}
+                  text={site.ui.hero.statusLabel}
+                />
+              </dt>
+              <dd>
+                <CopyReveal enabled={revealEnabled} text={site.status.status} />
+              </dd>
+            </div>
+            <div>
+              <dt>
+                <CopyReveal
+                  enabled={revealEnabled}
+                  text={site.ui.hero.focusLabel}
+                />
+              </dt>
+              <dd>
+                <CopyReveal enabled={revealEnabled} text={site.status.focus} />
+              </dd>
+            </div>
+            <div>
+              <dt>
+                <CopyReveal
+                  enabled={revealEnabled}
+                  text={site.ui.hero.updatedLabel}
+                />
+              </dt>
+              <dd>
+                <CopyReveal enabled={revealEnabled} text={site.status.updated} />
+              </dd>
+            </div>
+          </dl>
 
-        <a
-          className="home-hero__action"
-          data-runtime-activate-action="open"
-          data-runtime-hover-action="inspect"
-          data-runtime-target="timeline"
-          href={getLocaleArchiveHref(site.locale, site.archiveAction.href)}
-          ref={archiveActionRef}
-        >
-          <span aria-hidden="true" className="home-hero__action-arrow">
-            →
-          </span>
-          <CopyReveal
-            enabled={revealEnabled}
-            text={site.archiveAction.label}
-          />
-        </a>
+          <a
+            className="home-hero__action"
+            data-runtime-activate-action="open"
+            data-runtime-hover-action="inspect"
+            data-runtime-target="timeline"
+            href={getLocaleArchiveHref(site.locale, site.archiveAction.href)}
+            ref={archiveActionRef}
+          >
+            <span aria-hidden="true" className="home-hero__action-arrow">
+              →
+            </span>
+            <CopyReveal
+              enabled={revealEnabled}
+              text={site.archiveAction.label}
+            />
+          </a>
+        </div>
       </div>
 
       <div aria-hidden="true" className="home-hero__scene">

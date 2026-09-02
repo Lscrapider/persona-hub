@@ -1,7 +1,7 @@
 [
   {
     "id": "01",
-    "slug": "finance-management-ai",
+    "slug": "financial-management-ai",
     "title": "Financial Management AI",
     "status": "IN PROGRESS",
     "year": "FINANCE-01",
@@ -41,6 +41,416 @@
           {
             "name": "docker",
             "detail": "Docker Compose service orchestration and local deployment configuration"
+          }
+        ]
+      }
+    ],
+    "documents": [
+      {
+        "path": "README.md",
+        "title": "Financial Analysis AI · System Overview",
+        "summary": "A personal investment research system composed of a Java business core, Python intelligence workflows, and a Vue research workbench.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "System composition"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "Vue 3 Workbench\n   ↕ WebSocket / REST\nSpring Boot Core ── RabbitMQ ── Python AI Workers\n   ↕ PostgreSQL / InfluxDB        ↕ pgvector / MinIO"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Spring Boot owns authorization, assets, research entities, market snapshots, task state, and the internal data gateway.",
+              "Python owns LangGraph agents, OCR, embeddings, scene detection, and retrieval reranking.",
+              "RabbitMQ decouples long jobs; PostgreSQL/pgvector, InfluxDB, and MinIO hold structured, time-series, and object data."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Engineering focus"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Every conclusion remains tied to evidence records and time context.",
+              "Models read data only through authorized tools and never connect directly to business storage.",
+              "Async flows expose budgets, retries, dead letters, human review, and stage artifacts for recovery and audit."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/AI_CHAT_AGENT_ARCHITECTURE.md",
+        "title": "AI Chat Agent Architecture",
+        "summary": "Java protects identity, session, and data-access boundaries while Python LangGraph runs a budgeted, recoverable agent loop.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Runtime boundaries"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "finance-app owns bootstrap and assembly; finance-ai orchestrates sessions over finance-service, finance-security, and finance-data.",
+              "Java owns authentication, WebSocket sessions, RabbitMQ delivery, and the internal data gateway; Python never queries the business database directly.",
+              "Python tool callbacks are HMAC-signed, and the signing secret never enters model context."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "LangGraph state machine"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "context_gate → load_profile? → load_memory? → planner\n             → tools → final_decision → final_stream"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Graph State carries messages, profile, memory, scratchpad, pending tools, evidence records, and tool cache.",
+              "Only final_stream can emit answer_delta, keeping tool protocol separate from user-visible text.",
+              "Default budget: 6 steps, 10 total tool calls, 4 per step, 50-second timeout, and 2 final backtracks."
+            ]
+          },
+          {
+            "type": "quote",
+            "text": "The agent may choose how to analyze, but it cannot bypass Java identity, authorization, or data contracts."
+          }
+        ]
+      },
+      {
+        "path": "backend-java/finance-ai/README.md",
+        "title": "finance-ai Module Architecture",
+        "summary": "The orchestration module combines chat, agents, OCR, knowledge, and reports while finance-service retains market and business-data ownership.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Module ownership"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "finance-ai is assembled by finance-app and exposes /api/ai/**, /api/knowledge/**, /internal/agent/**, and WebSocket behavior.",
+              "Controllers and services own AI use cases, converters stabilize DTO/VO/Map shapes, messaging isolates RabbitMQ, and providers assemble scene data.",
+              "Market, fundamental, and valuation reads remain in finance-service; the AI module reaches them only through business services and the internal gateway."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Conversation and long jobs"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "Chat: Controller → Query Rewrite → Market Context → ChatClient\nAgent: WebSocket → Session → RabbitMQ → Python → Callback\nOCR/Report: Task → Stage Messages → Artifact / Result"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Query Rewrite resolves domain, target, time range, and executable dataRequests before the answer model runs.",
+              "agent_progress, answer_delta, and final_answer are separate; only the final answer is persisted with token usage.",
+              "OCR, manual knowledge, and reports share task boundaries with stages, human review, re-embedding, and regeneration."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/superpowers/specs/2026-06-10-ai-agent-tool-calling-rag-design.md",
+        "title": "Agent Tool Calling RAG",
+        "summary": "Controlled tools compute structured market scenes first, then derive a tagged knowledge query for compact evidence retrieval.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Two-stage tool chain"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "question → scene_signal_context → scene processors\n→ queryText + scenes + tags → knowledge_search → compact chunks"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "scene.signal_data reuses the Java SceneTargetDataProvider without creating a report task or publishing report messages.",
+              "Python expands seven-scene dependencies topologically; risk_strategy precomputes trend, valuation, and sentiment while returning only requested scenes.",
+              "Java validates session, scenes, tags, and limit before reranking knowledge by semantic, same-scene, and cross-scene signals."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Minimal model context"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Full candles, valuation history, and calculation parameters remain internal to processors.",
+              "Knowledge results are reduced to filename and content rather than exposing vectors or internal metadata.",
+              "Ordinary conversation skips RAG, and empty retrieval is represented honestly as insufficient evidence."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/superpowers/specs/2026-06-09-ai-agent-domain-toolcalling-design.md",
+        "title": "Domain Tool Calling",
+        "summary": "Tools are divided by business meaning across quotes, stock fundamentals, convertible bonds, and prior reports to avoid duplicate fields and unbounded context.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Tool responsibilities"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "market_quote owns current price, change, turnover, volume ratio, and current valuation snapshots.",
+              "stock_fundamental_context owns valuation history, financial indicators, and dividends; convertible_bond_context owns terms, premium, bond floor, YTM, and remaining size.",
+              "scene_report_context reads only reports visible to the current user."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Data gateway"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "Python Tool → signed Agent Gateway HTTP\n→ Java ActionHandler → Manage / Mapper\n→ compressed domain response → tool evidence"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Java caps sections and limits; a missing partition marks dataCompleteness.missing without discarding valid partitions.",
+              "Models select business tools instead of addressing storage tables.",
+              "The bounded agent loop still controls the total tool budget after new tools are added."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/OCR_PIPELINE.md",
+        "title": "OCR Knowledge Pipeline",
+        "summary": "A recoverable async pipeline turns images and PDFs into reviewed, categorized, and vector-searchable research knowledge.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Stage topology"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "normalize → recognize → text.clean → quality.validate\n          → rule_tag → llm_tag? → correct → embedding.index"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Images use Qwen-VL OCR; PDFs use OpenDataLoader, with artifacts from every stage stored in MinIO.",
+              "Java creates tasks, manages human review, and confirms reviewed.json; generic Python workers consume RabbitMQ stage messages.",
+              "Normal, retry, and DLX exchanges separate the happy path, 30-second TTL retries, and dead letters."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Quality gate and taxonomy"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Seven scene groups cover asset, price, volume, trend, valuation, sentiment, and risk strategy.",
+              "The rules-only path requires at least 2 nonempty categories and a maximum confidence of 0.75 or higher in each hit category.",
+              "Only weak results reach the LLM; correct merges, deduplicates, fills categories, and prevents empty documents from entering the vector index."
+            ]
+          },
+          {
+            "type": "paragraph",
+            "text": "Raw objects, cleaned output, and reviewed versions remain addressable, so recovery starts at the failing message rather than rerunning the entire document."
+          }
+        ]
+      },
+      {
+        "path": "docs/chunk入库打标签文档.md",
+        "title": "Chunk Ingestion Tag Gate",
+        "summary": "Rules first, an LLM only when needed, and one correction gate produce traceable seven-scene tags for every knowledge chunk.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Tagging path"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "ruleScenes + confidence → RuleTagQualityGate\n├─ confident → correction\n└─ weak → LLM whitelist tagging → correction\n→ metadata.scenes → embedding"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "The fixed groups are asset, price, volume, trend, valuation, sentiment, and risk_strategy.",
+              "Rules bypass the LLM only when at least 2 groups are covered and every hit group reaches the confidence threshold, typically 0.75.",
+              "The LLM may select only whitelist tags; correction merges, maps, resolves conflicts, deduplicates, and fills empty groups."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Observable metadata"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Retrieval reads only final metadata.scenes, never raw ruleScenes or llmScenes.",
+              "qualityGate records needLlm, reason, coverage, threshold, and low-confidence groups.",
+              "tagVersion and intermediate results enable replay when the taxonomy changes."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/标的标签计算规则.md",
+        "title": "Instrument Tag Computation Rules",
+        "summary": "Market, valuation, sentiment-proxy, and risk evidence is normalized to 0..1 and emitted as explainable, asset-aware scene signals.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Accuracy-first normalization"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "continuous  → sigmoid(center, scale)\ndistribution → percentile_rank(history / industry / asset type)\nanomaly     → robust_z_score(median, MAD) → sigmoid\nmulti-proof → weighted mean or noisy-or"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Historical percentile outranks fixed thresholds; fallback proceeds through industry and asset-type distributions, then returns missing rather than fake precision.",
+              "News and research apply exponential time decay, while labels established by any strong proof can use noisy-or.",
+              "Module score uses 0.7 × max(tags) + 0.3 × avg(non-zero tags) so one label cannot fully dominate."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Seven scenes and asset isolation"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "asset, price, volume, trend, valuation, sentiment, and risk_strategy share score, level, direction, tags, evidence, and queryText.",
+              "Stock, index, convertible-bond, and fund tags retain asset semantics so similarly named premiums cannot contaminate retrieval.",
+              "Price, volume, trend, and most risk rules remain deterministic; policy, news, institutional behavior, and value-trap semantics use model enhancement."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/REPORT_PIPELINE.md",
+        "title": "Report Generation Pipeline",
+        "summary": "Retrieval budgets are allocated from current market scenes and evidence is ranked per category instead of using a single global topK.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Why ordinary RAG is insufficient"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Market state changes the importance of risk, trend, valuation, and other knowledge groups; fixed topK lets high-volume categories crowd out evidence.",
+              "The system derives currentScenes and category scores before producing chunkAllocation and grouped retrievalTasks.",
+              "The generator receives category-grouped knowledgeContext with source structure preserved."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Retrieval and reranking"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "POST scene-task → Java task/RMQ → Python currentScenes\n→ Java chunkAllocation → Python query embeddings\n→ pgvector candidates → Jaccard tags + cross_scene_score → grouped context"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Java owns task state, allocation policy, and candidate reads; Python owns scene detection and query embeddings.",
+              "Vector similarity forms the candidate pool, then tag Jaccard and cross-scene scores calibrate ordering.",
+              "The asynchronous boundary makes long reports observable and retryable without pinning one HTTP request."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/superpowers/specs/2026-06-11-investor-psychological-profile-design.md",
+        "title": "Investor Psychology Scoring",
+        "summary": "Scenario answers produce six profile dimensions used only to constrain final-answer framing, risk emphasis, and advice strength.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Profile derivation"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Ten scenarios accumulate base scores such as loss anxiety, FOMO, stop-loss discipline, and execution, then aggregate six profile dimensions.",
+              "adviceStyle progresses conservatively from risk_first to explicit_trade_light_position; stronger position advice is not exposed in version one.",
+              "Chasing, loss aversion, and refusal to stop losses reduce position limits without changing market facts."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Agent boundary"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "planner → market / knowledge tools → scratchpad\n→ load latest profile → final answer constraints → stream"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "The profile is loaded only for final answer generation and never changes what facts the planner should retrieve.",
+              "Java owns answers, score aggregation, and the active profile version; Python consumes but does not persist the profile.",
+              "Without a profile, the agent falls back to general analysis and risk warnings without personalized sizing."
+            ]
           }
         ]
       }
@@ -97,6 +507,831 @@
           {
             "name": "Backend Services",
             "detail": "Route orchestration, data services, and a training-data feedback loop"
+          }
+        ]
+      }
+    ],
+    "documents": [
+      {
+        "path": "README.md",
+        "title": "Urban Sidequest · Engineering Overview",
+        "summary": "An explainable city-route system built from POI retrieval, candidate composition, real-segment calibration, and preference learning.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Decision stack"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "Compose Map UI → Spring Boot Route Orchestrator\n→ POI Retrieval / Ranking → LLM Candidate Composer\n→ Amap Calibration → PostGIS / Redis → Explainable A/B/C"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "The POI layer controls eligible places, the route layer controls order and composition, and map services verify reachability.",
+              "Rules and models have explicit roles: models do not own geographic facts, and the backend never exposes infeasible drafts.",
+              "Selections, dwell, and skip signals become training samples for future preference ranking."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Implementation status"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Compose plus StateFlow organizes map state, while Spring Boot currently orchestrates a synchronous route request.",
+              "PostGIS handles spatial queries and Redis caches hot candidates and route segments.",
+              "The next engineering focus is asynchronous jobs, independent route-quality reranking, and a behavior-driven profile loop."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/overview/technical-design.md",
+        "title": "Technical Design Overview",
+        "summary": "Android owns the interactive map, Spring Boot and PostGIS own reproducible route decisions, and GCJ-02 is used end to end.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Client and server boundaries"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Android uses Kotlin, Jetpack Compose, Amap Android SDK, and ViewModel plus StateFlow for screen state.",
+              "Spring Boot with PostgreSQL/PostGIS, Redis, and Amap Web API owns route rules, caching, audit, and user assets.",
+              "Android and Web map keys are separate; inputs, POIs, routes, and rendering remain in GCJ-02."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Route request pipeline"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "validate → POI recall → candidate paths\n→ weather/hours/rating/price/risk enrichment\n→ rules + time correction → A/B/C routes\n→ explanation → audit log"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "The 5,000-user capacity target is protected with rate limits, queues, caches, and explicit dependency-failure states.",
+              "The primary API is currently synchronous POST, with an asynchronous, progress-queryable task as the target.",
+              "Third-party failures degrade visibly, while location and route data stay isolated by authenticated user."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/algorithm/推荐路径算法.md",
+        "title": "Recommended Route Algorithm",
+        "summary": "Deterministic rules narrow the POI pool, an LLM composes candidate order, and real map data calibrates and rejects infeasible routes.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Candidate generation"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "LoadUserPreferenceProfile → semantic mapping → SelectPoiPool\n→ BuildCandidateRoutes → CalibrateSegments\n→ FilterRoutes → SavePreferenceSamples"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "LinearPoiPoolSelector ranks mustVisit plus linear scores, then PoiDiversitySampler controls category diversity with a maximum pool of 40.",
+              "LlmRouteCandidateComposer may arrange only pool IDs into up to 5 drafts and cannot invent POIs, coordinates, distance, time, rating, or hours.",
+              "The backend retains hard constraints and acceptance authority; drafts currently keep LLM ordering without a separate quality reranker."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Real segment calibration"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Each adjacent POI pair is calibrated through Amap for actual distance and duration, with caching for repeated segments.",
+              "Failures fall back through cache, constrained degradation, and straight-line estimation; invalid segment counts or total time reject the route.",
+              "Calibrated route_pref_v5 features are persisted before later execution feedback supplies training labels."
+            ]
+          },
+          {
+            "type": "quote",
+            "text": "The LLM composes and explains; the backend remains the source of map facts and executability."
+          }
+        ]
+      },
+      {
+        "path": "docs/algorithm/poi/POI线性打分矩阵取值设计.md",
+        "title": "POI Linear Scoring Matrix",
+        "summary": "A 36-feature explainable ranker and 8 score rows provide cold-start candidate ranking before diversity sampling.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Input and output"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "X[36] = POI facts + request cross + environment cross + profile cross\nS[8] = M(routeGoal, transport, budget, time) × X"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "poi_linear_x_v1 covers short-term interest, semantic role, quality, transport, distance, budget, risk, and profile crosses.",
+              "Eight rows emit interest, goal, quality, transport, distance cost, budget cost, risk cost, and personalization.",
+              "Linear scoring owns the decision; a neural residual may only compensate at small scale, while must-visit POIs are retained by a hard gate."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Feature contract"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Missing ratings, prices, and transit use explicit indicators rather than treating unknown as low quality.",
+              "Route goal, transport, budget, and time structure select Delta weights rather than becoming duplicated feature columns.",
+              "Training records schema version, names, and values; field ordering changes require a new version."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/algorithm/route/路线X特征定义.md",
+        "title": "Route X Five-block Features",
+        "summary": "route_pref_v5 encodes each route as stop, segment, route aggregate, context cross, and candidate-set-relative blocks.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Fixed input contract"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "X = stopMatrix[≤8×38]\n  + segmentMatrix[≤7×15]\n  + routeDerivedVector[61]\n  + contextCrossVector[27]\n  + intraSetVector[15]"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "stopMatrix covers POI semantics, quality, price, risk, transit, and role; segmentMatrix covers adjacent movement.",
+              "routeDerivedVector aggregates time, flow, diversity, budget, and risk; contextCrossVector expresses user, request, and environment fit.",
+              "intraSetVector carries relative rank, deltas, and duplication within one candidate set."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Leakage prevention"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Raw snapshots exist only for audit and rebuild; ranking, acceptance, reason codes, and confidence are supervision Y.",
+              "Short matrices are zero-padded and recognized through markers such as isLastStop and segmentEstimateMissing.",
+              "Names, order, shape, or missing defaults require a schema bump and historical rebuild; threshold-only edits use thresholdsVersion."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/algorithm/route/路线偏好排序模型训练设计.md",
+        "title": "Multi-head Route Preference Model",
+        "summary": "Five encoders share one representation while learning within-set ranking, absolute recommendation probability, and nine issue labels.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Model structure"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "5 feature encoders → concat(224) → shared encoder\n├─ scoreHead → routePreferenceScore\n├─ goodnessHead → routeGoodnessLogit\n└─ reasonHead MLP → 9 reason logits"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Stop and segment matrices are padded and flattened first; shared row encoders plus masked pooling remain the small-data fallback.",
+              "The current recipe uses hidden_dim 32 and dropout 0.30 after independent LayerNorm and GELU branches.",
+              "The reason head gets a private MLP to preserve nonlinear issue subspaces."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Joint loss and calibration"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "total = rankingLoss + 0.30 × goodnessLoss + 0.10 × reasonLoss"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Weighted pairwise softplus uses pairs only within one candidate set and source weights for real, human, and LLM judgments.",
+              "Masked BCE gives goodness an absolute scale and reason a multi-label objective only on rejected routes.",
+              "Production goodness uses temperature 1.41 and a default 0.5 threshold; within-set order uses raw preference score."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "ai-python/src/urban_sidequest_ai/models/route_preference/README.md",
+        "title": "Route Preference Model Runtime",
+        "summary": "Versioned datasets, artifacts, and prediction outputs keep Python training aligned with the Java route_pref_v5 feature contract.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Versioned dataset"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "MinIO datasets/{version}/\n├─ manifest.json\n├─ training_samples.parquet   # X\n├─ judgments.parquet          # Y\n└─ raw_snapshots/             # rebuild / audit"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "X and judgment align by candidate_set_id; pairs and train/valid/test splits stay within or across groups safely.",
+              "Training exports weights, feature schema, reason codes, model card, ONNX, and metric plots.",
+              "Online writes enter ingest, then an offline builder freezes a new dataset version without reading the product database."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Prediction contract"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "routePreferenceScore ranks within a set without sigmoid; routeGoodnessProb expresses absolute recommendation quality.",
+              "reasonCodeScores uses a fixed nine-code vocabulary and rejects unknown values.",
+              "Model and feature schema deploy together; new features cannot load an old model silently."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/algorithm/route/路线裁判与软拒绝设计.md",
+        "title": "Route Judge and Soft Rejection",
+        "summary": "Hard execution errors are separated from routes that are feasible but not good enough to recommend.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Two-stage judging"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "LLM routes → Hard Validator\n→ Goodness Model + 9 Reason Codes\n→ rank / soft reject → retry prompt if needed"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Hard validation catches missing must-visits, unknown POIs, duplicate stops, overtime, forbidden transport, unreachable segments, and boundary violations.",
+              "Goodness estimates user acceptance; pairwise order alone cannot tell whether the first-ranked route is still unacceptable.",
+              "Fixed reason codes cover interest, goal, time, fatigue, flow, diversity, repetition, budget, and risk."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Bounded retry"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "When too few routes survive, only primary reason codes and avoidPoiIds enter a retry prompt.",
+              "Retry count is capped and never returns an obviously weak route merely to fill three slots.",
+              "Judge inference and training share estimated segment features; only selected routes receive full Amap calibration."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/algorithm/route/LLM模拟用户路线选择设计.md",
+        "title": "LLM-simulated User Preference",
+        "summary": "During cold start, multiple simulated judges create auditable ranking and rejection supervision over frozen candidate sets.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Frozen boundaries"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "First-pass judgment reads in-memory generation output without database reads, replanning, or feature recomputation.",
+              "One generation is one candidate set; top-up judgment can only revisit the frozen MinIO snapshot.",
+              "Candidate X and judgment Y are append-only objects frozen into datasets through a manifest."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Leakage prevention"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "human-readable routes + request + persona → LLM judgment\nnumeric X / history judgments / behavior labels ✕"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "The prompt sees readable itineraries rather than stopMatrix, segmentMatrix, or training features.",
+              "Output is fixed to ranking, accepted/rejected routes, nine reason codes, and confidence; unknown codes fail validation.",
+              "Synthetic judgments are marked LLM_SIM_USER and never impersonate clicks, saves, starts, or completions."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "ai-python/src/urban_sidequest_ai/route_preference_judge/README.md",
+        "title": "Simulated Route Judge Pipeline",
+        "summary": "Persona jobs, Java route generation, multi-model judgments, and MinIO ingestion form a concurrent, top-up capable cold-start data task.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Execution topology"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "persona jobs → Java route generation → candidate ingest\n→ multi-LLM judge → JSON validation → judgment ingest\n→ dataset builder → versioned training set"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "The generator can create 100 personas with 20 requests each across goal, transport, budget, and interest combinations.",
+              "A candidate set may receive multi-temperature, multi-model judgments with shuffled display order to reduce position bias.",
+              "Route generation and judging use separate pools; retry and fallback failures are discarded instead of becoming corrupted labels."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Top-up and audit"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "topup-judgments fills only frozen sets below target-k and never regenerates routes.",
+              "Prompt version includes temperature and stores the actual response model for agreement audits.",
+              "personalReview exists for human diagnostics only and does not enter Java judgment or labels."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/user/用户画像问卷与画像表设计.md",
+        "title": "User Profile and Preference Model",
+        "summary": "Cold-start answers become fixed preference values, confidence, and extensible tag affinities that are safely shrunk during route requests.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Data model"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "user_preference_profiles stores fixed 0..1 dimensions and a global profileConfidence.",
+              "user_preference_tag_affinities references a tag catalog, avoiding one database column per evolving interest.",
+              "Profile and affinities are upserted or replaced in one transaction, and routing loads data only for the authenticated user."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Personalization strength"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "effective_preference = base_preference × profileConfidence\nprofileConfidence = 0  →  personalization = 0"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Global confidence shrinks low-information cold-start profiles and prevents overconfident recommendations.",
+              "Short-term interests supplied for one route and long-term profile affinities remain separate signals.",
+              "Version 1 covers questionnaire cold start only; behavior learning and the long-term Android feedback loop remain future work."
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "03",
+    "slug": "scrapider-guidelines",
+    "title": "Scrapider Guidelines",
+    "status": "OPEN SOURCE",
+    "year": "SKILL-01",
+    "summary": "A reusable engineering-guidelines Skill for coding agents.",
+    "content": "Packages minimal-change discipline, contract preservation, stack-aware reference routing, and verifiable delivery as an installable Skill. It covers Spring Boot, Python, Android Kotlin, and Jetpack Compose, with an independent read-only standards-review agent.",
+    "url": "https://github.com/Lscrapider/scrapider-guidelines",
+    "stack": [
+      "Skill · Agent Guidelines",
+      "Markdown · Routed References",
+      "Spring Boot · Python · Android Compose"
+    ],
+    "capabilities": [
+      "Loads engineering guidance according to the active task scope",
+      "Enforces minimal changes while preserving established business contracts",
+      "Covers Spring Boot, Python, Android Kotlin, and Jetpack Compose",
+      "Runs independent read-only standards-conformance reviews"
+    ],
+    "tree": [
+      {
+        "name": "scrapider-guidelines",
+        "children": [
+          {
+            "name": "SKILL.md",
+            "detail": "Defines shared engineering discipline, execution workflow, and stack-aware reference routing"
+          },
+          {
+            "name": "agents",
+            "detail": "OpenAI configuration and the read-only scrapider-standards-reviewer"
+          },
+          {
+            "name": "references/java",
+            "detail": "Spring Boot layering, object placement, and Maven multi-module responsibilities"
+          },
+          {
+            "name": "references/python",
+            "detail": "Python package, module, and code-organization guidance"
+          },
+          {
+            "name": "references/android",
+            "detail": "Android Kotlin, Jetpack Compose, and design-implementation guidance"
+          },
+          {
+            "name": "references/shared",
+            "detail": "Cross-stack standards-conformance review workflow"
+          }
+        ]
+      }
+    ],
+    "documents": [
+      {
+        "path": "README_zh-CN.md",
+        "title": "Scrapider Engineering Guidelines · README",
+        "summary": "Composable engineering guidance for Spring Boot, Python, Android Kotlin, and Compose, with references selected by the active stack.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Repository structure"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "SKILL.md                # execution entry\nagents/                 # standards reviewer\nreferences/java/        # Spring Boot and modules\nreferences/python/      # Python organization\nreferences/android/     # Kotlin / Compose\nreferences/shared/      # cross-stack review"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "The skill identifies the repository stack and existing boundaries before loading only relevant references.",
+              "Rules focus on ownership, dependency direction, contracts, and verification rather than forcing one template across ecosystems.",
+              "The package supports both implementation guidance and evidence-based standards review."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Usage principles"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "The target repository AGENTS.md, build constraints, and architectural facts take precedence.",
+              "Changes remain local, reuse current capabilities, and finish with risk-proportionate evidence.",
+              "Guidance does not replace engineering judgment; justified exceptions state their boundary and reason."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "SKILL.md",
+        "title": "Task Execution Protocol",
+        "summary": "Engineering rules become an executable loop: locate ownership, make the smallest coherent change, and prove contracts remain intact.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Execution loop"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "inspect → choose relevant reference → state scope\n→ implement surgical change → verify → report evidence"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "State the goal, approach, touched files, and verification path before implementation; load only references relevant to the active stack.",
+              "Reuse existing abstractions and avoid one-off layers, wrappers, or duplicate implementations.",
+              "Validation belongs at the contract-owning boundary, and changes preserve callers, data models, and error semantics."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Stop conditions"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Call out changes to public contracts, dependency direction, or data ownership before crossing that boundary.",
+              "Do not claim completion without proportionate build, runtime, or source evidence.",
+              "Reviews report only actionable issues with file, location, impact, and a scoped correction."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "agents/scrapider-standards-reviewer.md",
+        "title": "Standards Review Agent",
+        "summary": "The reviewer selects rules from the repository stack and uses source evidence to inspect structure, contracts, concurrency, and maintainability.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Review procedure"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Read repository and nested rules, build files, and the module graph before selecting Java, Python, Android, or shared guidance.",
+              "Trace data from entry points through business ownership, persistence, and external I/O, distinguishing violations from intentional exceptions.",
+              "Each finding includes an exact location, reproducible impact, relevant rule, and the smallest suitable correction."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Output contract"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "[severity] concise title\nfile:line\nimpact → evidence → recommended boundary"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Prioritize correctness, contracts, security, resource lifecycle, and dependency direction.",
+              "Do not turn personal taste, harmless formatting, or context-free guesses into findings.",
+              "When there are no valid findings, state the reviewed scope and residual risk."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "references/java/spring-boot-backend.md",
+        "title": "Spring Boot Backend Boundaries",
+        "summary": "A clear Controller to Service to Manage to Mapper direction separates transport, orchestration, and persistence.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Layer direction"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "Controller → Service → Manage → Mapper → PO\nrequest Param                response VO"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Controllers own HTTP contracts and parameter entry, never direct Mapper access; Services own use cases and transaction boundaries.",
+              "Where a Manage layer exists, it encapsulates aggregate reads and persistence detail instead of duplicating database assembly in Services.",
+              "Requests use typed Param models, responses use VOs, and persistence objects do not escape through APIs."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Integration boundaries"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Global advice maps exceptions consistently instead of rebuilding response envelopes in business code.",
+              "Handlers or providers are introduced only for a real replaceable protocol, not as empty abstraction.",
+              "MQ listeners and publishers each own message contracts, idempotency, and retry semantics."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "references/java/spring-boot-multi-module.md",
+        "title": "Spring Boot Multi-module Dependencies",
+        "summary": "Recover real module ownership from POMs and bootstrap wiring, then place runtime behavior along a one-way dependency graph.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Module ownership"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "The bootstrap module owns application startup and configuration assembly, not business implementations.",
+              "Business modules own their use cases, runtime behavior, and dependencies on lower-level ports.",
+              "Model and persistence modules remain stable boundaries; reverse dependencies must not pull rules into the data layer."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Review method"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "inspect parent/child POMs → draw dependency direction\n→ place change at current owner → verify no cycle"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Before adding a dependency, check transitive scope and potential cycles.",
+              "Cross-module DTOs, events, and interfaces are contracts, so inspect every producer and consumer.",
+              "Do not create a shared module for a few reused lines until a stable common meaning is demonstrated."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "references/python/python-code-organization.md",
+        "title": "Python Code Organization",
+        "summary": "Domain logic, workflow orchestration, adapters, and infrastructure keep explicit import direction and replaceable boundaries.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Organization"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Entry points perform configuration, dependency assembly, and lifecycle only; domain functions do not read global environment or implicit singletons.",
+              "External APIs, queues, model services, and databases sit behind adapters and enter core logic through typed structures.",
+              "Packages expose intentional public APIs and avoid circular imports, cross-layer relative imports, and hidden import side effects."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Async and resources"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "config → composition root → workflow/service → port → adapter"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Async boundaries remain consistent, and blocking I/O does not run directly on the event loop.",
+              "The composition root owns clients, connections, and worker lifecycle; failures preserve context and the original exception chain.",
+              "Configuration is validated at startup rather than scattered environment reads through business code."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "references/android/android-kotlin-compose.md",
+        "title": "Android Kotlin and Compose",
+        "summary": "Unidirectional data flow and stable UI state control recomposition while effects, navigation, and platform resources remain explicit.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "State and composition"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "Repository → ViewModel → StateFlow<UiState> → Composable\nUI event ────────────────────────────────↑"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Composables receive immutable state and emit events; network or persistence work does not start in a recomposition path.",
+              "ViewModels own screen state and business coroutines; remember or derivedStateOf is used only with a measurable purpose.",
+              "Lazy content supplies stable keys, and Modifier order is reviewed across layout, drawing, input, and semantics."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Effect boundaries"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "LaunchedEffect, DisposableEffect, and rememberUpdatedState follow lifecycle meaning, with keys matching real dependencies.",
+              "Navigation carries minimal stable identifiers and lets the destination ViewModel reload data.",
+              "Shared code uses Res.* or platform abstractions instead of depending directly on Android-only APIs."
+            ]
+          }
+        ]
+      },
+      {
+        "path": "references/shared/standards-review.md",
+        "title": "Standards Review",
+        "summary": "An evidence-driven checklist covers correctness, contracts, boundaries, and verification without reducing review to formatting.",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Evidence order"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "repository rules → changed behavior → ownership boundary\n→ callers/consumers → failure path → verification evidence"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Identify the behavior to preserve, then inspect callers, structures, errors, and resource lifecycle.",
+              "Structural findings explain why ownership is wrong; duplication findings demonstrate stable reusable meaning.",
+              "Concurrency, async, and messaging reviews focus on idempotency, cancellation, timeout, retry, and partial failure."
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Finding quality"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Conclusions must be reproducible from source or runtime evidence and bound their impact accurately.",
+              "Recommendations fit the repository architecture instead of substituting a broad refactor for a local defect.",
+              "Acceptance targets the closest build, static, runtime, and contract checks for the identified risk."
+            ]
           }
         ]
       }

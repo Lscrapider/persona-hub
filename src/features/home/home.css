@@ -52,8 +52,10 @@
   --hero-viewport-height: 100svh;
 
   position: relative;
-  block-size: var(--hero-viewport-height);
-  min-block-size: var(--hero-viewport-height);
+  display: grid;
+  grid-template-rows: minmax(34rem, 1fr) auto;
+  block-size: auto;
+  min-block-size: max(var(--hero-viewport-height), 52rem);
   overflow: clip;
   background: var(--color-bone);
   color: var(--color-ink);
@@ -61,7 +63,11 @@
 
 .home-hero__stage {
   position: relative;
-  block-size: 100%;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, min(51%, 48rem)) minmax(0, 1fr);
+  grid-template-rows: auto minmax(2rem, 1fr) auto;
+  block-size: auto;
   min-block-size: 0;
   overflow: visible;
   background: transparent;
@@ -74,24 +80,20 @@
   }
 }
 
-@media (min-width: 48.0625rem) and (max-height: 51.99rem) {
-  .home-hero {
-    --hero-viewport-height: 52rem;
-  }
-}
-
 .home-hero__content {
   position: relative;
   z-index: 2;
   display: flex;
-  inline-size: min(51%, 48rem);
+  grid-column: 1;
+  grid-row: 1;
+  inline-size: 100%;
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-start;
   padding:
     clamp(5.5rem, 12vw, 10rem)
     var(--space-page-inline)
-    clamp(11rem, 18vw, 15rem);
+    var(--space-xl);
   pointer-events: none;
 }
 
@@ -132,11 +134,20 @@
   letter-spacing: 0.025em;
 }
 
-.home-hero__status {
-  position: absolute;
+.home-hero__utility {
+  position: relative;
   z-index: 3;
-  inset-inline-start: var(--space-page-inline);
-  inset-block-start: clamp(29rem, 53vh, 36rem);
+  display: grid;
+  grid-column: 1;
+  grid-row: 3;
+  gap: var(--space-md);
+  align-self: end;
+  padding: 0 var(--space-page-inline) var(--space-xl);
+}
+
+.home-hero__status {
+  position: relative;
+  inset: auto;
   display: grid;
   gap: 0.2rem;
   min-inline-size: min(17rem, 36vw);
@@ -174,11 +185,11 @@
 }
 
 .home-hero__action {
-  position: absolute;
+  position: relative;
   z-index: 4;
-  inset-inline-start: var(--space-page-inline);
-  inset-block-end: clamp(13rem, 21vw, 17rem);
+  inset: auto;
   display: inline-flex;
+  inline-size: max-content;
   min-block-size: var(--size-touch);
   align-items: center;
   gap: var(--space-md);
@@ -216,10 +227,10 @@
 }
 
 .current-index {
-  position: absolute;
+  position: relative;
   z-index: 2;
-  inset-inline-start: 0;
-  inset-block-end: 0;
+  inset: auto;
+  grid-row: 2;
   inline-size: min(72%, 70rem);
   margin: 0;
   padding:
@@ -591,12 +602,17 @@ html[data-effect-mode="static"] .projects-section__arrow {
     font-size: clamp(3.7rem, 18vw, 7rem);
   }
 
-  .home-hero__status {
-    position: relative;
-    inset: auto;
+  .home-hero__utility {
+    display: grid;
     order: 2;
+    gap: var(--space-md);
+    inline-size: 100%;
+    padding: 0 var(--space-page-inline) clamp(2rem, 8vw, 4rem);
+  }
+
+  .home-hero__status {
     min-inline-size: 0;
-    margin: 0 var(--space-page-inline) var(--space-xl);
+    margin: 0;
   }
 
   .home-hero__scene {
@@ -613,9 +629,8 @@ html[data-effect-mode="static"] .projects-section__arrow {
   .home-hero__action {
     position: relative;
     inset: auto;
-    order: 4;
     align-self: flex-start;
-    margin: 0 var(--space-page-inline) clamp(2rem, 8vw, 4rem);
+    margin: 0;
   }
 
   .current-index {
@@ -656,7 +671,12 @@ html[data-effect-mode="static"] .projects-section__arrow {
   }
 
   .home-hero__status,
-  .home-hero__action {
-    margin-inline: var(--space-md);
+  .home-hero__action,
+  .home-hero__utility {
+    margin-inline: 0;
+  }
+
+  .home-hero__utility {
+    padding-inline: var(--space-md);
   }
 }

@@ -17,8 +17,9 @@ state remain data-driven rather than being frozen into the visual treatment.
 
 ## Focused comparison
 
-- **Dark field:** `LogWordField` renders only real local log titles, dates, and
-  tags, with stable dense rows and no permanent animation loop.
+- **Dark field:** the unified WebGL stage samples the existing reader SVG seam,
+  joins only the selected log row to that seam, and moves one cursor with real
+  article reading progress. No generated word field or arbitrary geometry remains.
 - **Boundary:** the warm reader uses `ellipse(72% 90% at 105% 53%)` with a
   shallow top threshold. It clears the left index without becoming a straight
   split or a rounded card.

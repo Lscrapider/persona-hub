@@ -21,8 +21,11 @@
 5. [特效验收标准](quality/2026-07-10-effects-quality-gates.md)：视觉、性能、响应式和无障碍门槛。
 6. [交互参考与来源](credits/2026-07-10-interaction-references.md)：外部参考的允许影响、禁止复制项与证据边界。
 7. [实现后的设计系统](DESIGN.md)：当前已落地的色彩、字体、构图、组件与禁止项。
-8. [Timeline、Projects 与 Logs 设计](superpowers/specs/2026-07-11-timeline-projects-logs-design.md)：当前归档内容模型、交互和渲染边界。
-9. [对应实施计划](superpowers/plans/2026-07-11-timeline-projects-logs-implementation.md)：已批准的分步实现与验收要求。
+8. [统一 WebGL 动效设计](superpowers/specs/2026-09-01-unified-webgl-motion-design.md)：经视觉复核修订后的单画布、连续场景与真实 DOM/SVG 锚点语义。
+9. [统一 WebGL 实施计划](superpowers/plans/2026-09-01-unified-webgl-motion-implementation.md)：Hero 碰撞修复、共享舞台迁移与验收要求。
+10. [WebGL 来源说明](credits/2026-09-01-unified-webgl-motion.md)：本次 GLSL、代码与资产来源边界。
+11. [语义 WebGL 验收记录](quality/2026-09-02-semantic-webgl-verification.md)：构建、响应式、交互、控制台与剩余环境风险。
+12. [Frontend Design Premium 审计证据](quality/premium-audit-2026-09-02.json)：严格模式静态审计原始结果。
 
 ## 决策优先级
 

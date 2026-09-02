@@ -106,7 +106,6 @@ function LocalizedHomeExperience() {
   return (
     <>
       <ArchiveRuntime
-        content={content}
         enabled={revealEnabled}
         key={locale}
         locked={isArchiveLocked}

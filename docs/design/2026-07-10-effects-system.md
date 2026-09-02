@@ -1,7 +1,7 @@
 # Scra Atlas effects system
 
 **Status:** current
-**Updated:** 2026-07-14
+**Updated:** 2026-09-01
 
 ## Purpose
 
@@ -42,48 +42,45 @@ The word field uses repeated concentric Canvas tracks filled with real technical
 Within the Hero, only two effects continue after entry:
 
 1. The signature typewriter types, holds, deletes right-to-left, pauses, and repeats.
-2. Canvas text tracks move slowly around concentric paths at different periods.
+2. The unified WebGL stage moves the Hero text tracks and semantic archive signals.
 
-Text-track motion pauses when the Hero leaves the viewport or the document is hidden.
+The stage pauses when the document is hidden and renders one deterministic frame in STATIC.
 
 ## Archive feature effects
 
-`ArchiveRuntime` sits between HomeExperience and the feature sections. Its prewarm and centre `IntersectionObserver` bands drive the compiler grammar without a global window scroll listener. Delegated pointer, focus, and activation events consume feature-owned runtime metadata. Pointer coordinates are coalesced into one animation frame and written only as CSS custom properties, not React state. The resulting probe and Build Trace are decorative, `pointer-events: none`, and `aria-hidden`; the trace is not a terminal or required status surface.
+`ArchiveRuntime` sits between HomeExperience and the feature sections. Its prewarm and centre `IntersectionObserver` bands continue to drive the compiler grammar. A separate passive, animation-frame-coalesced motion controller reads scroll position only to produce continuous scene interpolation and viewport-relative positions for measured semantic anchors; it does not drive React render state or hijack scrolling. Delegated pointer, focus, and activation events consume feature-owned runtime metadata. The Build Trace is decorative, `pointer-events: none`, and `aria-hidden`; the former generic pointer ring is removed because it did not communicate section meaning.
 
 Timeline keeps every milestone in semantic DOM. An aria-hidden SVG trace aligns to
 the responsive rail, draws once when its group becomes visible in FULL, and is
 complete immediately in STATIC. IntersectionObserver selects the focal record;
 the marker buttons remain keyboard-operable and do not depend on scrolling.
-Runtime targets identify the real record and marker. Hover or focus can pulse the
-local marker and SVG path, while activation continues to pin the existing record
-state rather than inventing a second selection model.
+Runtime targets identify the real record and marker. The WebGL stage measures the
+actual marker centres and sends one scroll-driven signal cursor along those real
+segments. Hover, focus, and activation continue to use the existing record state
+rather than inventing a second selection model.
 
 Projects uses DOM/CSS/SVG state because project selection and recursive system
 tree expansion are reader-facing controls. The explorer never hides project
 labels, and native `details` / `summary` branches preserve keyboard expansion
-without an emulated ARIA tree. Stable project and recursive node paths power the
-probe feedback; CSS `:has()` may illuminate a hovered or focused node's real
-ancestor path without making decorative leaves focusable.
+without an emulated ARIA tree. The stage measures the selected index row, detail
+boundary, and visible tree nodes; a travelling selection packet and restrained
+branches expose that actual topology without fabricating a background graph.
 
 Logs renders its list, metadata, and selected Markdown article in semantic DOM.
-Its only visual enhancement is the bounded, aria-hidden Canvas 2D
-`LogWordField` behind that reader. The field draws deterministic placements of
-real manifest and selected-log titles, dates, and tags; it does not make fake
-logs, terminal output, or required content. `ResizeObserver`, pointer activity,
-and section/document visibility can request one redraw at a time. FULL may run
-a short entrance composition, STATIC draws a deterministic final frame, and
-there is no permanent requestAnimationFrame loop. If Canvas is unavailable,
-the foreground reader remains complete. A passive scroll listener is attached
-only to the bounded reader. It schedules one frame that writes
-`--logs-read-progress`, while a reader-rooted observer assigns stable phases to
-real `logs/{id}/block-NN` elements and emits discrete read signals.
+The stage samples points from the exact existing SVG reader seam, joins the
+selected log row to the nearest seam point, and moves one cursor along that curve
+using the real bounded-reader progress. The former `LogWordField` is removed;
+there are no fabricated background words or arbitrary lines. A passive reader
+scroll listener schedules one frame that writes `--logs-read-progress` and emits
+the corresponding stage event, while a reader-rooted observer assigns stable
+phases to real `logs/{id}/block-NN` elements and emits discrete read signals.
 
 ## Modes
 
 The system has exactly two modes:
 
-- FULL: one-time CopyReveal, the two continuous Hero effects, section compiler transitions, a fine-pointer probe, a one-time Timeline trace draw, and only bounded active Logs-word-field or reader-progress work.
-- STATIC: final copy, final Hero frame, complete Timeline trace, final compiler states, and a deterministic Logs word-field frame when its visible field is rendered, with no displacement, pulse, probe, or visual animation.
+- FULL: one-time CopyReveal, the unified WebGL stage, continuous boundary interpolation, semantic Timeline/Projects/Logs signals, section compiler transitions, and Build Trace feedback.
+- STATIC: final copy, a deterministic unified-stage frame, complete Timeline trace, final compiler states, and no continuous visual animation.
 
 System reduced motion starts in STATIC. A user can choose and persist FULL. The runtime, root dataset, and CSS all respect that explicit choice. No third or intermediate effect mode exists.
 
@@ -91,7 +88,7 @@ System reduced motion starts in STATIC. A user can choose and persist FULL. The 
 
 EntryGate may provide a short first-session ritual with an immediate skip action. While it is visible, the archive shell is hidden and becomes inert after hydration. With JavaScript disabled, the gate is skipped by default and content is readable.
 
-The Hero's Canvas scene is aria-hidden and has a non-empty static fallback. The Logs Canvas is also aria-hidden and optional. Failure, backgrounding, mode changes, or an unavailable browser feature cannot hide content, trap focus, leave an empty Hero region, or make the Logs reader unavailable.
+The unified WebGL scene is aria-hidden and the Hero has a non-empty CSS silhouette fallback. Failure, backgrounding, mode changes, or an unavailable browser feature cannot hide content, trap focus, leave an empty Hero region, or make any archive section unavailable.
 
 ## Implementation boundaries
 
@@ -100,8 +97,8 @@ The Hero's Canvas scene is aria-hidden and has a non-empty static fallback. The 
 - Feature sections own semantic structure.
 - Shared primitives do not import archive records.
 - HomeExperience composes Hero → Timeline → Projects → Logs and forwards typed data instead of parsing Markdown or accessing files. ArchiveRuntime wraps that composition but does not own feature state.
-- IntersectionObserver drives Timeline focus, archive visibility, active-section state, compiler bands, and Logs block phases. No global scroll loop, scroll snap, Lenis, or scroll hijacking is allowed.
-- The Hero remains the only permanent rAF scene. Runtime pointer writes and bounded Logs progress updates schedule at most one frame per input burst and cancel it during cleanup.
+- IntersectionObserver drives Timeline focus, compiler bands, and Logs block phases. One passive window listener feeds the rAF-coalesced WebGL motion snapshot; no React scroll state, scroll snap, Lenis, or scroll hijacking is allowed.
+- ArchiveWebGLStage is the only permanent rAF scene in FULL. Bounded Logs progress updates schedule at most one frame per input burst and cancel it during cleanup.
 - Locale remounts, mode changes, EntryGate relocking, document visibility changes, and unmounts must remove all runtime timers, observers, listeners, and pending frames.
 
 ## Aesthetic checks

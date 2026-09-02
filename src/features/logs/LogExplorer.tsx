@@ -1,13 +1,11 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { CopyReveal } from "@/effects/primitives/CopyReveal";
-import { useSceneActivity } from "@/effects/runtime/useSceneActivity";
 import type { LocaleUiCopy, LogRecord } from "@/lib/content/types";
 import { containsCjk } from "@/lib/typography";
 
-import { LogWordField } from "./LogWordField";
 import { MarkdownArticle } from "./MarkdownArticle";
 import { useLogReadingProgress } from "./useLogReadingProgress";
 
@@ -21,34 +19,14 @@ function normalizeDateTime(date: string) {
   return date.replace(/^(\d{4})\.(\d{2})\.(\d{2})$/, "$1-$2-$3");
 }
 
-function getWordFieldTokens(logs: readonly LogRecord[], selectedLog: LogRecord) {
-  return Array.from(
-    new Set(
-      [
-        selectedLog.title,
-        selectedLog.date,
-        ...selectedLog.tags,
-        ...logs.flatMap((log) => [log.title, log.date, ...log.tags]),
-      ].filter(Boolean),
-    ),
-  );
-}
-
 export function LogExplorer({ copy, logs, revealEnabled }: LogExplorerProps) {
   const [selectedId, setSelectedId] = useState(logs[0]?.id ?? null);
-  const rootRef = useRef<HTMLDivElement>(null);
   const readerRef = useRef<HTMLElement>(null);
   const selectedLog = logs.find((log) => log.id === selectedId) ?? logs[0] ?? null;
-  const wordFieldTokens = useMemo(
-    () => (selectedLog ? getWordFieldTokens(logs, selectedLog) : []),
-    [logs, selectedLog],
-  );
-  const sceneActive = useSceneActivity(rootRef);
-  const canObserveScene = typeof IntersectionObserver !== "undefined";
   useLogReadingProgress(
     readerRef,
     selectedLog?.id ?? "",
-    revealEnabled && Boolean(selectedLog) && (sceneActive || !canObserveScene),
+    revealEnabled && Boolean(selectedLog),
   );
 
   if (!selectedLog) {
@@ -71,9 +49,7 @@ export function LogExplorer({ copy, logs, revealEnabled }: LogExplorerProps) {
       className="logs-explorer"
       data-physics-surface="logs"
       data-physics-target={`logs/${selectedLog.id}`}
-      ref={rootRef}
     >
-      <LogWordField targetRef={rootRef} tokens={wordFieldTokens} />
       <div className="logs-explorer__layout">
         <nav
           aria-label={copy.indexLabel}
@@ -95,6 +71,7 @@ export function LogExplorer({ copy, logs, revealEnabled }: LogExplorerProps) {
                     aria-controls="logs-reader"
                     aria-pressed={isSelected}
                     className="logs-explorer__choice"
+                    data-webgl-anchor="log-choice"
                     data-selected={isSelected || undefined}
                     data-runtime-activate-action="select"
                     data-runtime-hover-action="inspect"
@@ -140,6 +117,7 @@ export function LogExplorer({ copy, logs, revealEnabled }: LogExplorerProps) {
             />
             <path
               className="logs-explorer__compile-path"
+              data-webgl-anchor="log-reader-boundary"
               d="M 68 0 C 58 6, 49 13, 41 24 C 34 35, 31 46, 34 56 C 37 67, 29 75, 31 85 C 33 94, 38 98, 44 100"
               pathLength="1"
               vectorEffect="non-scaling-stroke"

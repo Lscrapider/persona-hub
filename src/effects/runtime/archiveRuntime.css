@@ -77,49 +77,15 @@ html[data-effect-mode="static"] .archive-experience [data-runtime-section] {
     --compile-mask: 0%;
   }
 
-  .archive-runtime__probe {
-    display: none;
-  }
-
   .archive-runtime__trace {
     transition: none;
   }
 }
 
-.archive-runtime__probe,
 .archive-runtime__trace {
   position: fixed;
   z-index: var(--layer-overlay);
   pointer-events: none;
-}
-
-.archive-runtime__probe {
-  inset: 0 auto auto 0;
-  inline-size: clamp(3rem, 5vw, 4.5rem);
-  block-size: clamp(3rem, 5vw, 4.5rem);
-  border: 1px solid color-mix(in oklch, var(--color-signal) 52%, transparent);
-  border-radius: 50%;
-  background: color-mix(in oklch, var(--color-signal) 5%, transparent);
-  opacity: 0;
-  transform: translate3d(
-      calc(var(--probe-x, -10rem) - 50%),
-      calc(var(--probe-y, -10rem) - 50%),
-      0
-    )
-    scale(0.72);
-  transition:
-    opacity var(--duration-probe) var(--ease-out),
-    transform var(--duration-probe) var(--ease-out);
-}
-
-.archive-experience[data-probe-active] .archive-runtime__probe {
-  opacity: 0.46;
-  transform: translate3d(
-      calc(var(--probe-x, -10rem) - 50%),
-      calc(var(--probe-y, -10rem) - 50%),
-      0
-    )
-    scale(1);
 }
 
 .archive-runtime__trace {
@@ -161,18 +127,8 @@ html[data-effect-mode="static"] .archive-experience [data-runtime-section] {
   white-space: nowrap;
 }
 
-html[data-effect-mode="static"] .archive-runtime__probe {
-  display: none;
-}
-
 html[data-effect-mode="static"] .archive-runtime__trace {
   transition: none;
-}
-
-@media (pointer: coarse), (max-width: 52rem) {
-  .archive-runtime__probe {
-    display: none;
-  }
 }
 
 @media (max-width: 34rem) {

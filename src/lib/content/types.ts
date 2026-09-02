@@ -50,6 +50,10 @@ export type LocaleUiCopy = Readonly<{
     openPublicProject: string;
     technicalStack: string;
     capabilities: string;
+    document: string;
+    filesystem: string;
+    repositoryFiles: string;
+    sourceDocument: string;
     systemMap: string;
     indexed: string;
   }>;
@@ -108,6 +112,21 @@ export type TimelineRecord = Readonly<{
   highlights?: readonly string[];
 }>;
 
+export type MarkdownBlock =
+  | Readonly<{ type: "heading"; level: 2 | 3 | 4; text: string }>
+  | Readonly<{ type: "paragraph"; text: string }>
+  | Readonly<{ type: "list"; ordered: boolean; items: readonly string[] }>
+  | Readonly<{ type: "quote"; text: string }>
+  | Readonly<{ type: "code"; language: string; code: string }>
+  | Readonly<{ type: "rule" }>;
+
+export type ProjectDocument = Readonly<{
+  blocks: readonly MarkdownBlock[];
+  path: string;
+  summary: string;
+  title: string;
+}>;
+
 export type ProjectRecord = Readonly<{
   id: string;
   slug: string;
@@ -119,16 +138,9 @@ export type ProjectRecord = Readonly<{
   url?: string;
   stack: readonly string[];
   capabilities: readonly string[];
+  documents: readonly ProjectDocument[];
   tree: readonly ArchiveTreeNode[];
 }>;
-
-export type MarkdownBlock =
-  | Readonly<{ type: "heading"; level: 2 | 3 | 4; text: string }>
-  | Readonly<{ type: "paragraph"; text: string }>
-  | Readonly<{ type: "list"; ordered: boolean; items: readonly string[] }>
-  | Readonly<{ type: "quote"; text: string }>
-  | Readonly<{ type: "code"; language: string; code: string }>
-  | Readonly<{ type: "rule" }>;
 
 export type LogRecord = Readonly<{
   id: string;

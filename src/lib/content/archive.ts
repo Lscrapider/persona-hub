@@ -21,6 +21,8 @@ import type {
   LocaleUiCopy,
   LogRecord,
   LocalizedArchiveContent,
+  MarkdownBlock,
+  ProjectDocument,
   ProjectRecord,
   SiteLocaleContent,
   TimelineRecord,
@@ -149,6 +151,10 @@ function assertEnglishContent(value: unknown, field: string) {
 
   if (typeof value === "object" && value !== null) {
     Object.entries(value).forEach(([key, item]) => {
+      if (key === "path" && field.includes(".documents[")) {
+        return;
+      }
+
       assertEnglishContent(item, `${field}.${key}`);
     });
   }
@@ -269,6 +275,85 @@ function validateTimelineRecord(
   };
 }
 
+function validateMarkdownBlock(value: unknown, field: string): MarkdownBlock {
+  const record = assertObject(value, field);
+  const type = assertString(record.type, `${field}.type`);
+
+  if (type === "rule") {
+    return { type };
+  }
+
+  if (type === "heading") {
+    const level = record.level;
+
+    if (level !== 2 && level !== 3 && level !== 4) {
+      throw new Error(`${field}.level must be 2, 3, or 4`);
+    }
+
+    return {
+      type,
+      level,
+      text: assertString(record.text, `${field}.text`),
+    };
+  }
+
+  if (type === "list") {
+    if (typeof record.ordered !== "boolean") {
+      throw new Error(`${field}.ordered must be a boolean`);
+    }
+
+    return {
+      type,
+      ordered: record.ordered,
+      items: assertStringArray(record.items, `${field}.items`),
+    };
+  }
+
+  if (type === "code") {
+    return {
+      type,
+      language: assertString(record.language, `${field}.language`),
+      code: assertString(record.code, `${field}.code`),
+    };
+  }
+
+  if (type === "paragraph" || type === "quote") {
+    return {
+      type,
+      text: assertString(record.text, `${field}.text`),
+    };
+  }
+
+  throw new Error(`${field}.type must be a supported markdown block`);
+}
+
+function validateProjectDocument(
+  value: unknown,
+  index: number,
+  collection: string,
+): ProjectDocument {
+  const field = `${collection}[${index}]`;
+  const record = assertObject(value, field);
+  const documentPath = assertString(record.path, `${field}.path`);
+
+  if (
+    documentPath.startsWith("/") ||
+    documentPath.includes("..") ||
+    !documentPath.endsWith(".md")
+  ) {
+    throw new Error(`${field}.path must be a relative .md repository path`);
+  }
+
+  return {
+    path: documentPath,
+    title: assertString(record.title, `${field}.title`),
+    summary: assertString(record.summary, `${field}.summary`),
+    blocks: assertArray(record.blocks, `${field}.blocks`).map((block, blockIndex) =>
+      validateMarkdownBlock(block, `${field}.blocks[${blockIndex}]`),
+    ),
+  };
+}
+
 function validateProjectRecord(
   value: unknown,
   index: number,
@@ -289,6 +374,14 @@ function validateProjectRecord(
     ...(url === undefined ? {} : { url }),
     stack: assertStringArray(record.stack, `${field}.stack`),
     capabilities: assertStringArray(record.capabilities, `${field}.capabilities`),
+    documents: assertArray(record.documents, `${field}.documents`).map(
+      (document, documentIndex) =>
+        validateProjectDocument(
+          document,
+          documentIndex,
+          `${field}.documents`,
+        ),
+    ),
     tree: assertArray(record.tree, `${field}.tree`).map((node, treeIndex) =>
       validateTreeNode(node, `${field}.tree[${treeIndex}]`),
     ),
@@ -401,6 +494,10 @@ function validateUiCopy(value: unknown, field: string): LocaleUiCopy {
       "openPublicProject",
       "technicalStack",
       "capabilities",
+      "document",
+      "filesystem",
+      "repositoryFiles",
+      "sourceDocument",
       "systemMap",
       "indexed",
     ]) as LocaleUiCopy["projects"],

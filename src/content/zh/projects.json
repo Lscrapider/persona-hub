@@ -1,7 +1,7 @@
 [
   {
     "id": "01",
-    "slug": "finance-management-ai",
+    "slug": "financial-management-ai",
     "title": "理财分析 AI",
     "status": "IN PROGRESS",
     "year": "FINANCE-01",
@@ -41,6 +41,416 @@
           {
             "name": "docker",
             "detail": "Docker Compose 服务编排与本地部署配置"
+          }
+        ]
+      }
+    ],
+    "documents": [
+      {
+        "path": "README.md",
+        "title": "理财分析 AI · 系统总览",
+        "summary": "Java 业务核心、Python 智能工作流和 Vue 研究界面协作组成的个人投资研究系统。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "系统组成"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "Vue 3 Workbench\n   ↕ WebSocket / REST\nSpring Boot Core ── RabbitMQ ── Python AI Workers\n   ↕ PostgreSQL / InfluxDB        ↕ pgvector / MinIO"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Spring Boot 负责权限、资产与研究对象、行情快照、任务状态和内部数据网关。",
+              "Python 负责 LangGraph Agent、OCR、Embedding、场景识别和检索重排。",
+              "RabbitMQ 解耦长任务；PostgreSQL/pgvector、InfluxDB 与 MinIO 分别承载结构化、时序和对象数据。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "工程重点"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "结论必须关联证据记录与时间上下文，避免生成结果脱离来源。",
+              "模型永远通过授权工具读取数据，不能直接连接业务存储。",
+              "异步链路具备预算、重试、死信、人工复核与阶段产物，便于恢复和审计。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/AI_CHAT_AGENT_ARCHITECTURE.md",
+        "title": "AI 对话代理架构",
+        "summary": "以 Java 守住认证、会话和数据访问边界，以 Python LangGraph 驱动可预算、可回退的 Agent 推理链。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "运行边界"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "finance-app 负责启动与装配；finance-ai 承接 AI 会话编排，并依赖 finance-service、finance-security 与 finance-data。",
+              "Java 持有用户身份、WebSocket 会话、RabbitMQ 投递和内部数据网关；Python 不直接访问业务数据库。",
+              "Python 通过带 HMAC 签名的内部回调请求工具数据，密钥永不进入模型上下文。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "LangGraph 状态机"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "context_gate → load_profile? → load_memory? → planner\n             → tools → final_decision → final_stream"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Graph State 保存消息、画像、记忆、scratchpad、待执行工具、证据记录和工具缓存。",
+              "只有 final_stream 可以推送 answer_delta，工具协议与用户可见文本完全隔离。",
+              "默认预算：6 个步骤、10 次总工具调用、单步最多 4 次、50 秒超时、最多 2 次最终回退。"
+            ]
+          },
+          {
+            "type": "quote",
+            "text": "Agent 可以决定如何分析，但不能绕过 Java 的身份、权限与数据契约。"
+          }
+        ]
+      },
+      {
+        "path": "backend-java/finance-ai/README.md",
+        "title": "finance-ai 模块架构",
+        "summary": "AI 编排模块聚合 Chat、Agent、OCR、知识库与报告管线，但把行情和业务数据所有权留在 finance-service。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "模块所有权"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "finance-ai 不独立启动，由 finance-app 扫描根包并装配 /api/ai/**、/api/knowledge/**、/internal/agent/** 与 WebSocket。",
+              "controller/service 负责 AI 用例，converter 收敛 DTO/VO/Map，publisher 与 messaging 隔离 RabbitMQ，provider 组装场景数据。",
+              "外部行情、基本面和估值查询仍属于 finance-service；AI 模块只能通过业务服务与内部网关读取。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "对话与长任务"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "Chat: Controller → Query Rewrite → Market Context → ChatClient\nAgent: WebSocket → Session → RabbitMQ → Python → Callback\nOCR/Report: Task → Stage Messages → Artifact / Result"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Query Rewrite 先判断领域、标的、时间范围与 dataRequests，数据不足时要求模型显式说明缺口。",
+              "agent_progress、answer_delta 与 final_answer 分离；只有最终答案保存会话并记录 Token。",
+              "OCR、手动知识与场景报告共享任务化边界，可展示阶段、人工复核、重嵌入与重新生成。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/superpowers/specs/2026-06-10-ai-agent-tool-calling-rag-design.md",
+        "title": "Agent Tool Calling RAG",
+        "summary": "把场景计算和知识召回封装为受控工具，让 Agent 先获得结构化市场信号，再生成带标签的检索查询。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "两段式工具链"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "question → scene_signal_context → scene processors\n→ queryText + scenes + tags → knowledge_search → compact chunks"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "scene.signal_data 复用 Java SceneTargetDataProvider，只返回数据包，不建报告任务、不发报告消息。",
+              "Python 拓扑展开七大场景依赖；请求 risk_strategy 时预跑 trend、valuation、sentiment，但只返回请求场景。",
+              "knowledge.search 在 Java 侧校验 session、场景、标签与 limit，再以语义分、同场景和跨场景标签重排。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "上下文最小化"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "完整 K 线、估值历史与计算参数只在处理器内部使用，不透传给 LLM。",
+              "知识结果裁剪为 filename + content，避免把向量和内部 metadata 塞进最终上下文。",
+              "普通闲聊不调用 RAG；无召回时返回空 chunks 并明确证据不足。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/superpowers/specs/2026-06-09-ai-agent-domain-toolcalling-design.md",
+        "title": "业务域 Tool Calling",
+        "summary": "按数据语义拆分实时行情、股票基本面、可转债上下文和历史报告工具，避免重复字段与无界上下文。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "工具分工"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "market_quote 只负责当前价格、涨跌、成交、换手、量比和最新估值快照。",
+              "stock_fundamental_context 聚合估值历史、财务指标与分红；convertible_bond_context 聚合条款、溢价、债底、YTM 与剩余规模。",
+              "scene_report_context 读取当前用户可见的历史分析，不泄露其他用户报告。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "数据网关"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "Python Tool → signed Agent Gateway HTTP\n→ Java ActionHandler → Manage / Mapper\n→ compressed domain response → tool evidence"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "sections 与 limit 在 Java 端设上限，缺少某一分区只标记 dataCompleteness.missing。",
+              "工具不按底层表名暴露能力，模型根据业务意图选择工具。",
+              "有限多轮 loop 继续控制总工具预算，新工具不会无限扩大上下文或调用次数。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/OCR_PIPELINE.md",
+        "title": "OCR 知识管线",
+        "summary": "用可恢复的异步阶段把图片与 PDF 转换为可审查、可分类、可向量检索的个人研究知识。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "阶段拓扑"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "normalize → recognize → text.clean → quality.validate\n          → rule_tag → llm_tag? → correct → embedding.index"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "图片进入 Qwen-VL OCR；PDF 使用 OpenDataLoader，识别结果与每阶段产物写入 MinIO。",
+              "Java 创建任务、处理人工复核并确认 reviewed.json；Python 通用 Worker 消费 RabbitMQ 阶段消息。",
+              "normal、retry 与 DLX 三组交换机隔离正常流、30 秒 TTL 重试和死信。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "质量门与分类"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "七类场景覆盖资产、价格、成交量、趋势、估值、情绪和风险策略。",
+              "至少命中 2 个非空分类，且每个命中分类最高置信度达到 0.75，才通过纯规则路径。",
+              "弱结果才调用 LLM；correct 阶段负责合并、去重、补类和删除无效项，全部为空则不写向量索引。"
+            ]
+          },
+          {
+            "type": "paragraph",
+            "text": "每个阶段都保留原始对象、清洗结果和审核版本，失败可定位到具体消息与对象，而不是重新跑完整链路。"
+          }
+        ]
+      },
+      {
+        "path": "docs/chunk入库打标签文档.md",
+        "title": "Chunk 入库标签门",
+        "summary": "以规则优先、LLM 按需、统一回正的三段结构，为每个知识 Chunk 生成可追踪的七类检索标签。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "标签主链"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "ruleScenes + confidence → RuleTagQualityGate\n├─ confident → correction\n└─ weak → LLM whitelist tagging → correction\n→ metadata.scenes → embedding"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "七大类固定为 asset、price、volume、trend、valuation、sentiment、risk_strategy。",
+              "规则结果至少覆盖 2 类，且所有命中类别置信度达到阈值（建议 0.75）才跳过 LLM。",
+              "LLM 只能从白名单选标签；回正阶段负责合并、映射、冲突处理、去重与补齐空数组。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "可观测元数据"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "最终检索只读取 metadata.scenes，不直接消费 ruleScenes 或 llmScenes。",
+              "qualityGate 保存 needLlm、reason、覆盖数、阈值与低置信类别，便于定位成本和精度问题。",
+              "tagVersion 与规则/LLM 中间结果可临时保留，使标签升级可以回放和重新计算。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/标的标签计算规则.md",
+        "title": "标的标签计算规则",
+        "summary": "将行情、估值、情绪代理和风险证据归一到 0..1，按资产类型生成可解释且可配置的场景信号。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "精度优先的归一化"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "continuous  → sigmoid(center, scale)\ndistribution → percentile_rank(history / industry / asset type)\nanomaly     → robust_z_score(median, MAD) → sigmoid\nmulti-proof → weighted mean or noisy-or"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "历史分位优先于固定阈值；分布不足时按行业和同资产类型降级，仍不足则不硬算。",
+              "新闻、公告和研报采用指数时间衰减；任一强证据即可成立的标签使用 noisy-or。",
+              "模块总分采用 0.7 × max(tags) + 0.3 × avg(non-zero tags)，避免单标签完全支配。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "七类场景与资产隔离"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "asset、price、volume、trend、valuation、sentiment、risk_strategy 使用统一 payload：score、level、direction、tags、evidence、queryText。",
+              "股票、指数、可转债和基金的专属标签带资产语义，防止转债溢价知识污染基金溢价检索。",
+              "价格、量能、趋势和多数风险规则保持确定性；政策、新闻、机构行为与估值陷阱才交给 LLM/本地模型增强。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/REPORT_PIPELINE.md",
+        "title": "报告生成管线",
+        "summary": "根据实时市场场景动态分配检索预算，按类别召回并重排证据，而不是依赖单次全局 topK。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "为什么不是普通 RAG"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "市场状态会改变风险、趋势、估值等知识类别的重要度，固定 topK 容易让高频类别挤占证据。",
+              "系统先计算 currentScenes 与类别分数，再生成 chunkAllocation 和分组 retrievalTasks。",
+              "结果以 category-grouped knowledgeContext 回到报告生成器，保留类别结构与来源信息。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "检索与重排链"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "POST scene-task → Java task/RMQ → Python currentScenes\n→ Java chunkAllocation → Python query embeddings\n→ pgvector candidates → Jaccard tags + cross_scene_score → grouped context"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Java 负责任务状态、分配策略与候选读取；Python 负责场景识别和查询向量。",
+              "向量相似度提供候选集，标签 Jaccard 与跨场景分数进一步校准排序。",
+              "异步任务让长报告可观测、可重试，也避免一次 HTTP 请求绑住整条推理链。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/superpowers/specs/2026-06-11-investor-psychological-profile-design.md",
+        "title": "投资心理画像计算",
+        "summary": "用情境问卷推导六个画像维度，并只在最终回答阶段约束表达、风险提示和建议强度。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "画像推导"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "10 道情境题先累计 loss anxiety、FOMO、止损纪律、执行力等基础标签分，再聚合为 riskEmotion、decisionStyle、holdingMindset、tradingTempo、explanationPreference 和 adviceStyle。",
+              "adviceStyle 从 risk_first 到 explicit_trade_light_position 按保守优先级推导，第一版不开放高仓位明确建议。",
+              "追高、不止损与亏损焦虑会折减仓位上限；画像不改变行情事实和标的质量。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Agent 接入边界"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "planner → market / knowledge tools → scratchpad\n→ load latest profile → final answer constraints → stream"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "画像只在 final answer 阶段加载，不干预 planner 应该查询什么事实。",
+              "Java 保存问卷、标签分与当前生效版本；Python 只消费画像，不持久化主数据。",
+              "无画像时降级为通用分析与风险提示，不给个性化仓位。"
+            ]
           }
         ]
       }
@@ -97,6 +507,831 @@
           {
             "name": "Backend Services",
             "detail": "路线编排、数据服务与训练数据闭环"
+          }
+        ]
+      }
+    ],
+    "documents": [
+      {
+        "path": "README.md",
+        "title": "城市副本 · 工程总览",
+        "summary": "一个由 POI 召回、路线候选、真实路段校准和偏好学习构成的可解释城市路线系统。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "决策栈"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "Compose Map UI → Spring Boot Route Orchestrator\n→ POI Retrieval / Ranking → LLM Candidate Composer\n→ Amap Calibration → PostGIS / Redis → Explainable A/B/C"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "POI 层决定哪些地点可进入候选，路线层决定顺序与组合，地图服务验证真实可达性。",
+              "规则和模型分工明确：模型不拥有地理事实，后端不把不可执行草案暴露给客户端。",
+              "执行后的路线选择、停留和跳过信号进入训练样本，支撑后续偏好排序。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "实现状态"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "客户端以 Compose + StateFlow 组织地图状态，服务端以 Spring Boot 编排同步路线请求。",
+              "PostGIS 承载空间查询，Redis 承载热点候选与路段缓存。",
+              "下一阶段重点是异步任务、独立路线质量重排和真实行为画像闭环。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/overview/technical-design.md",
+        "title": "技术设计总览",
+        "summary": "以 Android 负责交互地图，以 Spring Boot/PostGIS 负责可复现路线决策，并统一使用 GCJ-02 坐标体系。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "客户端与服务端边界"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Android 使用 Kotlin、Jetpack Compose、Amap Android SDK 与 ViewModel + StateFlow 驱动界面状态。",
+              "Spring Boot 结合 PostgreSQL/PostGIS、Redis 和 Amap Web API，持有路线规则、缓存、审计与用户资产。",
+              "Android 与 Web 端地图密钥分离；坐标从输入、POI、路线到渲染全链路统一为 GCJ-02。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "路线请求流水线"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "validate → POI recall → candidate paths\n→ weather/hours/rating/price/risk enrichment\n→ rules + time correction → A/B/C routes\n→ explanation → audit log"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "目标容量按 5000 并发用户规划，以限流、队列、缓存和明确失败状态保护第三方地图依赖。",
+              "当前主接口仍为同步 POST，演进目标是可查询进度与可恢复的异步任务。",
+              "第三方失败必须降级且可见；用户位置与路线数据按认证用户隔离。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/algorithm/推荐路径算法.md",
+        "title": "推荐路径算法",
+        "summary": "先以确定性规则收窄 POI，再让 LLM 组合候选顺序，最后用真实地图数据校准并淘汰不可执行路线。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "候选生成"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "LoadUserPreferenceProfile → semantic mapping → SelectPoiPool\n→ BuildCandidateRoutes → CalibrateSegments\n→ FilterRoutes → SavePreferenceSamples"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "LinearPoiPoolSelector 用 mustVisit 与线性分数排序，再由 PoiDiversitySampler 控制类别多样性，候选池最多 40 个。",
+              "LlmRouteCandidateComposer 只允许从候选池 ID 中组合最多 5 条草案，不得虚构 POI、坐标、距离、时间、评分或营业状态。",
+              "服务端保留硬约束和验收权；当前保留 LLM 顺序，尚未增加独立质量重排。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "真实路段校准"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "每对相邻 POI 调用 Amap 获取真实距离和时间，并以缓存降低重复请求。",
+              "失败时按缓存、受限降级与直线估算链回退；路段数量或总时间不合格的路线直接丢弃。",
+              "校准后以 route_pref_v5 保存训练特征，后续执行反馈再形成监督标签。"
+            ]
+          },
+          {
+            "type": "quote",
+            "text": "LLM 负责组合与解释，地图事实和可执行性始终由后端确定。"
+          }
+        ]
+      },
+      {
+        "path": "docs/algorithm/poi/POI线性打分矩阵取值设计.md",
+        "title": "POI 线性打分矩阵",
+        "summary": "用 36 维可解释特征与 8 个评分行完成冷启动候选排序，再以多样性采样构成受控 POI 池。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "输入与输出"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "X[36] = POI facts + request cross + environment cross + profile cross\nS[8] = M(routeGoal, transport, budget, time) × X"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "五类来源最终收敛为 poi_linear_x_v1：短期兴趣、语义角色、质量、交通、距离、预算、风险与画像交叉。",
+              "八个输出行是 interest、goal、quality、transport、distance cost、budget cost、risk cost 与 personalization。",
+              "Linear 是主判断，Neural residual 只允许小尺度补偿；必去点由 Hard Constraint Gate 强保留，不靠分数。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "特征契约"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "评分缺失、价格缺失和交通缺失使用显式 indicator，不把未知直接当低质量。",
+              "routeGoal、transportProfile、budgetLevel 与时间结构通过 Delta 调权，不作为可重复计分的输入列。",
+              "训练样本必须保存 featureSchemaVersion、featureNames 与 featureValues；字段顺序变化必须升级版本。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/algorithm/route/路线X特征定义.md",
+        "title": "Route X 五块特征",
+        "summary": "route_pref_v5 把每条路线编码为 stop、segment、整路线、上下文交叉与候选组相对五块输入。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "固定输入契约"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "X = stopMatrix[≤8×38]\n  + segmentMatrix[≤7×15]\n  + routeDerivedVector[61]\n  + contextCrossVector[27]\n  + intraSetVector[15]"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "stopMatrix 描述 POI 语义、质量、价格、风险、交通和位置角色；segmentMatrix 描述相邻路段。",
+              "routeDerivedVector 聚合时间、空间流、多样性、预算与风险；contextCrossVector 表达用户/请求/环境匹配。",
+              "intraSetVector 在同一 candidate set 内提供相对排名、差值和重复度，专门拉开相似路线。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "防止标签泄漏"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "raw snapshot 只用于审计和重建，不进入 X；ranking、accepted、reasonCodes 与 confidence 都属于监督 Y。",
+              "矩阵不足行补零，并由 isLastStop、segmentEstimateMissing 等标记识别 padding。",
+              "字段名、顺序、shape 或缺失默认值变化必须 bump schema 并重建历史样本；只改阈值走 thresholdsVersion。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/algorithm/route/路线偏好排序模型训练设计.md",
+        "title": "路线偏好多头模型",
+        "summary": "五分支编码器共享底座，同时学习组内排序、绝对可推荐概率和九类结构化问题原因。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "模型结构"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "5 feature encoders → concat(224) → shared encoder\n├─ scoreHead → routePreferenceScore\n├─ goodnessHead → routeGoodnessLogit\n└─ reasonHead MLP → 9 reason logits"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "stop 与 segment 首版 padding 后 flatten；小数据过拟时可替换为共享行编码器 + masked pooling。",
+              "当前 hidden_dim=32、dropout=0.30，五分支先独立 LayerNorm/GELU 再融合。",
+              "reason 头使用私有小 MLP，避免共享空间被好坏二分类占满。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "联合损失与校准"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "total = rankingLoss + 0.30 × goodnessLoss + 0.10 × reasonLoss"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "排序采用同 candidate set 内的加权 pairwise softplus；真实用户、人工与 LLM Judge 使用不同 sourceWeight。",
+              "goodness 使用 masked BCE 提供绝对质量刻度；reason 使用多标签 BCE，仅在拒绝路线生效。",
+              "线上 goodness 经过 temperature=1.41 校准，默认 0.5 阈值；组内排序只看原始 preference score。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "ai-python/src/urban_sidequest_ai/models/route_preference/README.md",
+        "title": "Route Preference Model 运行时",
+        "summary": "定义固定数据集、训练产物和推理输出，使 Python 训练与 Java route_pref_v5 特征契约保持一致。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "版本化数据集"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "MinIO datasets/{version}/\n├─ manifest.json\n├─ training_samples.parquet   # X\n├─ judgments.parquet          # Y\n└─ raw_snapshots/             # rebuild / audit"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "X 与 judgment 以 candidate_set_id 对齐，pair 只能在同组构造；train/valid/test 也按组切分避免泄漏。",
+              "训练产出模型权重、feature_schema、reason_codes、model_card、ONNX 与多类指标图。",
+              "线上写入只进入 ingest，离线 dataset builder 冻结新版本后训练，不直接读取产品 PostgreSQL。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "推理契约"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "routePreferenceScore 用于组内排序，不做 sigmoid；routeGoodnessProb 表示绝对可推荐概率。",
+              "reasonCodeScores 固定九类，未知 code 视为数据错误。",
+              "模型目录与 feature schema 一起部署，禁止用新特征读取旧模型。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/algorithm/route/路线裁判与软拒绝设计.md",
+        "title": "路线裁判与软拒绝",
+        "summary": "把“不能执行”的硬错误与“能执行但不值得推荐”的软质量问题分开处理。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "两级裁判"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "LLM routes → Hard Validator\n→ Goodness Model + 9 Reason Codes\n→ rank / soft reject → retry prompt if needed"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Hard Validator 处理必去点缺失、未知 POI、重复 stop、超时、禁用交通、不可达和越界。",
+              "Goodness Model 判断用户接受概率；pairwise 只能区分 A 比 B 好，无法判断第一名是否仍然太差。",
+              "固定 reason codes 覆盖兴趣、目标、时间、疲劳、空间流、多样性、重复类型、预算和风险。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "受控重试"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "不足三条可用路线时，pipeline 只把主要 reason codes 和 avoidPoiIds 写进重试提示。",
+              "重试次数有上限，不为了凑数暴露明显低质量路线。",
+              "模型输入与训练均使用同口径估算路段，最终入选后才调用高德真实路线校准。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/algorithm/route/LLM模拟用户路线选择设计.md",
+        "title": "LLM 模拟用户偏好",
+        "summary": "在真实反馈不足的冷启动期，让多个模拟 Judge 对冻结候选集产生可审计的排序与拒绝监督。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "冻结边界"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "首轮评价直接读取生成流程内存，不读库、不重规划、不复算 X。",
+              "一次生成对应一个 candidate set；补 k 只能重评 MinIO frozen raw snapshot，不能加入新路线。",
+              "候选集 X 与 judgment Y 分对象追加，版本化 dataset 通过 manifest 冻结。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "防止标签泄漏"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "human-readable routes + request + persona → LLM judgment\nnumeric X / history judgments / behavior labels ✕"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Prompt 只给路线可读信息，默认不暴露 stopMatrix、segmentMatrix 与训练特征。",
+              "输出固定 ranking、accepted/rejected、九类 reasonCodes 与 confidence，未知 code 直接校验失败。",
+              "Synthetic judgment 标记 LLM_SIM_USER，不伪装成点击、收藏或完成等真实行为。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "ai-python/src/urban_sidequest_ai/route_preference_judge/README.md",
+        "title": "模拟路线 Judge 执行链",
+        "summary": "将 Persona 请求、Java 路线生成、多模型评价和 MinIO Judgment 写入组织成可并发、可补齐的冷启动数据任务。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "执行拓扑"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "persona jobs → Java route generation → candidate ingest\n→ multi-LLM judge → JSON validation → judgment ingest\n→ dataset builder → versioned training set"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "默认可生成 100 个 persona × 每个 20 个 request，覆盖路线目标、交通、预算与兴趣组合。",
+              "同一候选集可使用多温度、多模型重复评价，并打乱展示顺序降低位置偏差。",
+              "路线生成与 Judge 使用分离线程池；失败按配置重试和 fallback，全部失败则不保存污染样本。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "补 k 与审计"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "topup-judgments 只补当前 judgment 数低于 target-k 的冻结候选集，不重新生成路线。",
+              "promptVersion 追加温度尾缀，保存实际响应模型，支持按模型与温度审计一致性。",
+              "personalReview 仅用于人工诊断，不进入 Java Judgment 和训练标签。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "docs/user/用户画像问卷与画像表设计.md",
+        "title": "用户画像与偏好模型",
+        "summary": "把冷启动问卷拆成固定偏好值、置信度和可扩展标签亲和度，并在路线请求中进行受控收缩。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "数据模型"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "user_preference_profiles 保存 0..1 的固定维度与全局 profileConfidence。",
+              "user_preference_tag_affinities 通过标签目录外键保存动态亲和度，避免为每个兴趣扩展数据库列。",
+              "画像与标签亲和度在同一事务中 upsert/replace，路由计算只加载当前认证用户的数据。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "个性化强度"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "effective_preference = base_preference × profileConfidence\nprofileConfidence = 0  →  personalization = 0"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "全局置信度用于收缩冷启动画像，防止低信息问卷产生过强推荐。",
+              "路线内的短期兴趣条件与长期画像亲和度属于不同信号，不能混为同一字段。",
+              "当前 v1 只覆盖问卷冷启动；行为学习与 Android 长期反馈闭环仍是后续能力。"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "03",
+    "slug": "scrapider-guidelines",
+    "title": "Scrapider Guidelines",
+    "status": "OPEN SOURCE",
+    "year": "SKILL-01",
+    "summary": "面向编码代理的可复用工程规范 Skill。",
+    "content": "将最小改动、契约保护、按技术栈路由和可验证交付整理为可安装的 Skill，覆盖 Spring Boot、Python、Android Kotlin 与 Jetpack Compose，并提供独立的只读规范审查 Agent。",
+    "url": "https://github.com/Lscrapider/scrapider-guidelines",
+    "stack": [
+      "Skill · Agent Guidelines",
+      "Markdown · Routed References",
+      "Spring Boot · Python · Android Compose"
+    ],
+    "capabilities": [
+      "根据任务范围按需加载对应工程规范",
+      "约束最小化改动并保护既有业务契约",
+      "覆盖 Spring Boot、Python、Android Kotlin 与 Jetpack Compose",
+      "通过独立只读 Agent 执行规范一致性审查"
+    ],
+    "tree": [
+      {
+        "name": "scrapider-guidelines",
+        "children": [
+          {
+            "name": "SKILL.md",
+            "detail": "定义共通工程纪律、执行工作流与按技术栈加载引用的路由规则"
+          },
+          {
+            "name": "agents",
+            "detail": "OpenAI 配置与只读 scrapider-standards-reviewer"
+          },
+          {
+            "name": "references/java",
+            "detail": "Spring Boot 分层架构、对象归属与 Maven 多模块职责规范"
+          },
+          {
+            "name": "references/python",
+            "detail": "Python 包、模块与代码组织规范"
+          },
+          {
+            "name": "references/android",
+            "detail": "Android Kotlin、Jetpack Compose 与设计实现规范"
+          },
+          {
+            "name": "references/shared",
+            "detail": "跨技术栈共享的规范一致性审查流程"
+          }
+        ]
+      }
+    ],
+    "documents": [
+      {
+        "path": "README_zh-CN.md",
+        "title": "Scrapider 工程规范 · README",
+        "summary": "面向 Spring Boot、Python、Android Kotlin 与 Compose 的可组合工程规范 Skill，按任务栈加载对应参考。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "仓库结构"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "SKILL.md                # 执行入口\nagents/                 # 标准审查角色\nreferences/java/        # Spring Boot 与多模块\nreferences/python/      # Python 组织\nreferences/android/     # Kotlin / Compose\nreferences/shared/      # 跨栈审查"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Skill 先识别仓库技术栈和现有边界，再只读取本次需要的参考文档。",
+              "规则关注职责、依赖方向、契约和验证，不用统一模板强行覆盖不同语言生态。",
+              "既可指导编码与重构，也可作为 standards reviewer 的证据基线。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "使用原则"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "优先遵守目标仓库自己的 AGENTS.md、构建约束和架构事实。",
+              "保持改动局部、复用现有能力，并以风险相匹配的证据完成验收。",
+              "规范不替代工程判断；合理例外需要说明边界与原因。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "SKILL.md",
+        "title": "任务执行协议",
+        "summary": "把工程规范转化为可执行的编码流程：先定位边界，再做最小改动，最后用证据验证契约未被破坏。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "执行闭环"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "inspect → choose relevant reference → state scope\n→ implement surgical change → verify → report evidence"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "开始前说明目标、方案、涉及文件和验证方式；只加载与当前技术栈相关的参考规范。",
+              "优先复用现有抽象，避免为一次性需求新增层级、包装器或重复实现。",
+              "验证由拥有契约的边界负责，修改必须保留调用方、数据模型和错误语义。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "停止条件"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "需求会改变公共契约、跨模块依赖方向或数据所有权时，先显式确认影响。",
+              "无法证明行为正确时不宣称完成；构建、运行检查和精确源码证据需与风险相匹配。",
+              "审查输出只报告有行动价值的问题，并给出文件、位置、影响和修复方向。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "agents/scrapider-standards-reviewer.md",
+        "title": "标准审查代理",
+        "summary": "按仓库实际技术栈选择规则集，用源码证据审查结构、契约、并发和可维护性，而不是进行风格化挑错。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "审查流程"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "先读取仓库与子目录规范、构建文件和模块图，再选择 Java、Python、Android 或共享规则。",
+              "沿入口、业务边界、持久化与外部 I/O 跟踪数据流，区分真实违规与合理例外。",
+              "每个发现必须包含精确位置、可复现影响、对应规则和范围最小的修复建议。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "输出约束"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "[severity] concise title\nfile:line\nimpact → evidence → recommended boundary"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "优先报告会破坏正确性、契约、安全、资源生命周期或模块方向的问题。",
+              "不把个人偏好、无影响的格式差异和缺少上下文的猜测当成发现。",
+              "没有有效发现时明确给出已检查范围和剩余风险。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "references/java/spring-boot-backend.md",
+        "title": "Spring Boot 后端边界",
+        "summary": "用 Controller → Service → Manage → Mapper 的清晰依赖方向隔离传输、业务编排与持久化。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "分层方向"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "Controller → Service → Manage → Mapper → PO\nrequest Param                response VO"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Controller 负责 HTTP 契约与参数入口，不直接访问 Mapper；Service 持有业务用例和事务边界。",
+              "已有 Manage 层时由它封装聚合读取与持久化细节，避免 Service 重复拼装数据库操作。",
+              "请求使用有类型的 Param，响应使用 VO，禁止把 PO 直接暴露给外部接口。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "集成边界"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "异常由全局 advice 统一映射，业务代码不重复拼接响应壳。",
+              "只有存在明确可替换协议时才引入 handler/provider 策略，避免空洞抽象。",
+              "MQ listener 与 publisher 各自持有消息契约、幂等和重试语义。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "references/java/spring-boot-multi-module.md",
+        "title": "Spring Boot 多模块依赖",
+        "summary": "先从 POM 和启动装配恢复真实模块职责，再沿单向依赖放置运行时行为与数据模型。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "模块所有权"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "启动模块只负责 application、配置装配和运行入口，不吸收业务实现。",
+              "业务模块拥有自己的 use case、运行时行为和对下层端口的依赖。",
+              "模型/持久化模块保持稳定边界，禁止通过反向依赖把业务规则拉回数据层。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "审查方法"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "inspect parent/child POMs → draw dependency direction\n→ place change at current owner → verify no cycle"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "新增依赖前检查它是否扩大传递依赖或形成循环。",
+              "跨模块 DTO、事件和接口属于契约，修改时同步检查所有生产者与消费者。",
+              "不要为了复用少量代码创建新的共享模块；先验证是否真有稳定共同语义。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "references/python/python-code-organization.md",
+        "title": "Python 代码组织",
+        "summary": "让领域逻辑、工作流编排、适配器和基础设施各自拥有清晰导入方向与可替换边界。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "组织原则"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "入口层只完成配置、依赖装配和生命周期管理；领域函数不读取全局环境或隐式单例。",
+              "外部 API、消息队列、模型服务和数据库放在适配器边界，通过有类型的数据结构进入核心逻辑。",
+              "包的公共接口显式导出，避免循环导入、跨层相对导入和无法追踪的 import side effect。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "异步与资源"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "config → composition root → workflow/service → port → adapter"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "同步与异步边界保持一致，阻塞 I/O 不直接运行在事件循环。",
+              "客户端、连接与 Worker 生命周期由组合根管理，失败包含上下文并保持原异常链。",
+              "配置在启动时验证，业务代码不散落读取环境变量。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "references/android/android-kotlin-compose.md",
+        "title": "Android Kotlin 与 Compose",
+        "summary": "以单向数据流和稳定 UI State 控制重组，把副作用、导航与平台资源留在明确边界。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "状态与组合"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "Repository → ViewModel → StateFlow<UiState> → Composable\nUI event ────────────────────────────────↑"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "Composable 接收不可变状态并发出事件，不在重组路径启动网络请求或持久化操作。",
+              "ViewModel 拥有屏幕状态与业务协程；可派生值使用 remember/derivedStateOf 时必须有清晰收益。",
+              "Lazy 列表提供稳定 key，Modifier 顺序按布局、绘制、输入语义审查。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "副作用边界"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "LaunchedEffect、DisposableEffect 与 rememberUpdatedState 按生命周期语义选择，key 必须对应真实依赖。",
+              "导航参数保持最小，只传稳定标识并在目标 ViewModel 重新加载数据。",
+              "资源通过 Res.* 或平台抽象访问，共享代码不直接依赖 Android-only API。"
+            ]
+          }
+        ]
+      },
+      {
+        "path": "references/shared/standards-review.md",
+        "title": "标准化审查",
+        "summary": "用证据驱动的检查表覆盖正确性、契约、边界与验证，避免把审查退化成格式扫描。",
+        "blocks": [
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "证据顺序"
+          },
+          {
+            "type": "code",
+            "language": "text",
+            "code": "repository rules → changed behavior → ownership boundary\n→ callers/consumers → failure path → verification evidence"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "先判断改动想保持的行为，再检查调用方、数据结构、错误路径和资源生命周期。",
+              "结构问题必须说明为什么当前所有者不合适；重复问题必须证明存在可稳定复用的语义。",
+              "并发、异步和消息处理重点检查幂等、取消、超时、重试与部分失败。"
+            ]
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "发现质量"
+          },
+          {
+            "type": "list",
+            "ordered": false,
+            "items": [
+              "结论应可由源码或运行证据复核，并准确限定影响范围。",
+              "建议要符合仓库现有架构，不以大重构替代局部缺陷修复。",
+              "验收覆盖最接近风险的构建、静态检查、运行路径和契约检查。"
+            ]
           }
         ]
       }

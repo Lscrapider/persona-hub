@@ -32,6 +32,16 @@ export function useLogReadingProgress(
         "--logs-read-progress",
         `${(progress * 100).toFixed(2)}%`,
       );
+      reader.style.setProperty(
+        "--logs-read-progress-unit",
+        progress.toFixed(4),
+      );
+      reader.dispatchEvent(
+        new CustomEvent("scra:logs-progress", {
+          bubbles: true,
+          detail: { logId, progress },
+        }),
+      );
     };
     const scheduleProgress = () => {
       if (!progressFrame) {
@@ -39,6 +49,12 @@ export function useLogReadingProgress(
       }
     };
     const dispatchRead = (target: string) => {
+      const readerRect = reader.getBoundingClientRect();
+
+      if (readerRect.bottom <= 0 || readerRect.top >= window.innerHeight) {
+        return;
+      }
+
       const signal: RuntimeSignal = {
         action: "read",
         source: "scroll",
@@ -124,6 +140,7 @@ export function useLogReadingProgress(
       resizeObserver?.disconnect();
       reader.removeEventListener("scroll", scheduleProgress);
       reader.style.removeProperty("--logs-read-progress");
+      reader.style.removeProperty("--logs-read-progress-unit");
       blocks.forEach((block) => delete block.dataset.readPhase);
     };
   }, [enabled, logId, readerRef]);
