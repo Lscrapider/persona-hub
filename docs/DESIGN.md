@@ -86,6 +86,8 @@ The current user direction adds a feature-local Three.js renderer alongside the 
 
 ## Projects request playback
 
+Project documentation opens in a viewport-sized reader rather than a fixed 1040×790px dialog. Desktop width grows up to 1920px with responsive outer margins; height follows the available viewport. The document index grows from 230px to 360px, while body text scales from 16px to 19px. The centered article keeps a 64rem reading measure (82ch for English). Navigation and content scroll independently, with the existing narrow/short-window layouts and accessible close/focus behavior retained.
+
 Selecting a supported business flow runs one narrated interaction through the existing model architecture. Only the current route carries a tapered signal stroke; unboxed endpoint names and explanations in the scene’s upper-left whitespace describe the current action. The stroke fades on arrival as the receiving model performs the step's operation. A compact transport row sits below the scene. One continuous seek bar represents progress through the complete interaction, without visible step numbers. The shared Project flow player owns pause, single-step navigation, replay and 1×/2× speed. Its graphite, copper and text tokens are the existing `--atlas-*` tokens in `projects.css`. STATIC remains manually navigable, and opening module documentation suspends automatic playback. The sequences illustrate successful paths and never submit live backend work. OCR explicitly retains the human review gate.
 
 Project models use tighter default camera framing while retaining responsibility hierarchy. Small unboxed captions remain clickable. Request packets render after scene geometry without depth testing so platforms and services cannot hide their position.

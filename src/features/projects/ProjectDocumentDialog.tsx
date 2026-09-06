@@ -185,7 +185,7 @@ export function ProjectDocumentDialog({ project, node, locale, onClose }: Projec
 
         <article aria-labelledby={activeDocument ? readerTitleId : undefined} className="project-document-dialog__reader" ref={readerRef} tabIndex={0}>
           {activeDocument ? (
-            <>
+            <div className="project-document-dialog__reader-content">
               <div aria-atomic="true" aria-live="polite" className="project-document-dialog__sr-only">{copy.reading}: {activeDocument.title}</div>
               <div className="project-document-dialog__document-meta">
                 <span>{activeDocument.path}</span>
@@ -195,7 +195,7 @@ export function ProjectDocumentDialog({ project, node, locale, onClose }: Projec
               <p className="project-document-dialog__summary">{activeDocument.summary}</p>
               <ul aria-label={copy.stack} className="project-document-dialog__stack">{project.stack.map((technology) => <li key={technology}>{technology}</li>)}</ul>
               <div className="project-document-dialog__prose" key={activeDocument.path}>{activeDocument.blocks.map(documentBlock)}</div>
-            </>
+            </div>
           ) : <p className="project-document-dialog__empty">{copy.empty}</p>}
         </article>
       </div>
