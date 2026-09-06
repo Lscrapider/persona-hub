@@ -46,7 +46,6 @@ export type ArchiveSemanticMap = Readonly<{
   projectChoices: readonly ArchiveSemanticPoint[];
   projectDetail: ArchiveSemanticPoint | null;
   projectNodes: readonly ArchiveSemanticPoint[];
-  timelineNodes: readonly ArchiveSemanticPoint[];
 }>;
 
 export type ArchiveMotionSnapshot = {
@@ -120,7 +119,6 @@ export function createArchiveMotionSnapshot(
       projectChoices: [],
       projectDetail: null,
       projectNodes: [],
-      timelineNodes: [],
     },
     sectionProgress: 0,
     transitionProgress: 0,

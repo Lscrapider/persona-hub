@@ -1,140 +1,51 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-
 import type { TimelineRecord } from "@/lib/content/types";
 
-type TimelineRecordRef = (element: HTMLElement | null) => void;
+type RecordRef = (element: HTMLElement | null) => void;
 
+/** Native scrolling is the only owner of the current timeline record. */
 export function useActiveTimelineRecord(records: readonly TimelineRecord[]) {
-  const [activeId, setActiveId] = useState<string | null>(
-    records[0]?.id ?? null,
-  );
-  const recordElementsRef = useRef(new Map<string, HTMLElement>());
-  const recordRefCallbacks = useRef(new Map<string, TimelineRecordRef>());
-
-  const getRecordRef = useCallback((id: string): TimelineRecordRef => {
-    const existingCallback = recordRefCallbacks.current.get(id);
-
-    if (existingCallback) {
-      return existingCallback;
-    }
-
-    const recordRef: TimelineRecordRef = (element) => {
-      if (element) {
-        recordElementsRef.current.set(id, element);
-        return;
-      }
-
-      recordElementsRef.current.delete(id);
-    };
-
-    recordRefCallbacks.current.set(id, recordRef);
-
-    return recordRef;
+  const [activeId, setActiveId] = useState<string | null>(records[0]?.id ?? null);
+  const elements = useRef(new Map<string, HTMLElement>());
+  const callbacks = useRef(new Map<string, RecordRef>());
+  const getRecordRef = useCallback((id: string): RecordRef => {
+    if (!callbacks.current.has(id)) callbacks.current.set(id, (element) => {
+      if (element) elements.current.set(id, element);
+      else elements.current.delete(id);
+    });
+    return callbacks.current.get(id)!;
   }, []);
-
   useEffect(() => {
-    if (typeof IntersectionObserver === "undefined") {
-      return;
-    }
-
-    let observer: IntersectionObserver | null = null;
-    let resizeFrame = 0;
-
-    const reconcileActiveRecord = () => {
-      const viewportHeight = Math.max(1, window.innerHeight);
-      const bandStart = viewportHeight * 0.32;
-      const bandEnd = viewportHeight * 0.58;
-      const bandCenter = (bandStart + bandEnd) / 2;
-      let bestId: string | null = null;
-      let bestOverlap = -1;
-      let bestDistance = Number.POSITIVE_INFINITY;
-
-      records.forEach((record) => {
-        const element = recordElementsRef.current.get(record.id);
-
-        if (!element) {
-          return;
-        }
-
+    let frame = 0;
+    let visible = false;
+    const reconcile = () => {
+      frame = 0;
+      if (!visible || document.hidden) return;
+      let closest: string | null = null;
+      let distance = Infinity;
+      for (const [id, element] of elements.current) {
         const rect = element.getBoundingClientRect();
-        const overlap = Math.max(
-          0,
-          Math.min(rect.bottom, bandEnd) - Math.max(rect.top, bandStart),
-        );
-        const distance = Math.abs((rect.top + rect.bottom) / 2 - bandCenter);
-
-        if (
-          overlap > bestOverlap ||
-          (overlap === bestOverlap && distance < bestDistance)
-        ) {
-          bestId = record.id;
-          bestOverlap = overlap;
-          bestDistance = distance;
-        }
-      });
-
-      if (bestId) {
-        setActiveId(bestId);
+        const next = Math.abs(rect.top + Math.min(rect.height / 2, 150) - window.innerHeight * 0.42);
+        if (next < distance) { closest = id; distance = next; }
       }
+      if (closest) setActiveId(closest);
     };
-
-    const connectObserver = () => {
-      observer?.disconnect();
-
-      const viewportHeight = Math.max(1, window.innerHeight);
-      const topInset = Math.round(viewportHeight * 0.32);
-      const bottomInset = Math.round(viewportHeight * 0.42);
-
-      observer = new IntersectionObserver(reconcileActiveRecord, {
-        rootMargin:
-          `-${topInset.toString()}px 0px ` +
-          `-${bottomInset.toString()}px 0px`,
-        threshold: [0, 0.15, 0.5, 0.85],
-      });
-
-      records.forEach((record) => {
-        const element = recordElementsRef.current.get(record.id);
-
-        if (element) {
-          observer?.observe(element);
-        }
-      });
-    };
-
-    const handleResize = () => {
-      if (resizeFrame) {
-        window.cancelAnimationFrame(resizeFrame);
-      }
-
-      resizeFrame = window.requestAnimationFrame(() => {
-        resizeFrame = 0;
-        connectObserver();
-        reconcileActiveRecord();
-      });
-    };
-
-    connectObserver();
-    resizeFrame = window.requestAnimationFrame(() => {
-      resizeFrame = 0;
-      reconcileActiveRecord();
-    });
-    window.addEventListener("resize", handleResize, { passive: true });
-    window.visualViewport?.addEventListener("resize", handleResize, {
-      passive: true,
-    });
-
+    const schedule = () => { if (!frame && visible && !document.hidden) frame = requestAnimationFrame(reconcile); };
+    const section = elements.current.values().next().value?.closest(".timeline-section");
+    const observer = new IntersectionObserver(([entry]) => { visible = !!entry?.isIntersecting; schedule(); });
+    if (section) observer.observe(section);
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule, { passive: true });
+    document.addEventListener("visibilitychange", schedule);
     return () => {
-      if (resizeFrame) {
-        window.cancelAnimationFrame(resizeFrame);
-      }
-
-      observer?.disconnect();
-      window.removeEventListener("resize", handleResize);
-      window.visualViewport?.removeEventListener("resize", handleResize);
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      document.removeEventListener("visibilitychange", schedule);
     };
   }, [records]);
-
-  return [activeId, setActiveId, getRecordRef] as const;
+  return [activeId, getRecordRef] as const;
 }

@@ -122,12 +122,6 @@ function measurePathPoints(path: SVGPathElement): ArchiveSemanticPoint[] {
 function measureSemantics(root: HTMLElement): ArchiveSemanticMap {
   const heroSceneElement = root.querySelector<HTMLElement>(".home-hero__scene");
   const heroSceneRect = heroSceneElement?.getBoundingClientRect();
-  const timelineNodes = Array.from(
-    root.querySelectorAll<HTMLElement>(
-      '[data-webgl-anchor="timeline-node"]',
-    ),
-    centerPoint,
-  );
   const projectChoices = Array.from(
     root.querySelectorAll<HTMLElement>(
       '[data-webgl-anchor="project-choice"]',
@@ -169,7 +163,6 @@ function measureSemantics(root: HTMLElement): ArchiveSemanticMap {
       ? centerPoint(projectDetailElement)
       : null,
     projectNodes,
-    timelineNodes,
   };
 }
 

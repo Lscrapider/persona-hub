@@ -9,7 +9,6 @@ import {
 } from "@/features/home/kineticTypeFieldScene";
 import { createKineticWebglRenderer } from "@/features/home/kineticTypeFieldWebglRenderer";
 
-const MAX_TIMELINE_NODES = 12;
 const MAX_PROJECT_CHOICES = 8;
 const MAX_PROJECT_NODES = 12;
 const MAX_LOG_READER_NODES = 12;
@@ -36,12 +35,8 @@ in vec2 vUv;
 uniform vec2 uResolution;
 uniform float uTime;
 uniform float uScenePosition;
-uniform float uSectionProgress;
-uniform float uScrollVelocity;
 uniform float uInteractionEnergy;
 uniform float uLogProgress;
-uniform float uTimelineCount;
-uniform vec3 uTimelineNodes[12];
 uniform float uProjectChoiceCount;
 uniform vec3 uProjectChoices[8];
 uniform float uProjectDetailAvailable;
@@ -54,7 +49,6 @@ uniform float uLogReaderCount;
 uniform vec2 uLogReaderNodes[${MAX_LOG_READER_NODES}];
 uniform vec3 uBone;
 uniform vec3 uSignal;
-uniform vec3 uSilver;
 
 out vec4 outColor;
 
@@ -91,68 +85,6 @@ float ringMask(float distanceValue, float radiusPixels, float widthPixels) {
 float sceneWeight(float sceneIndex) {
   float distanceValue = abs(uScenePosition - sceneIndex);
   return 1.0 - smoothstep(0.08, 0.96, distanceValue);
-}
-
-vec4 timelineScene() {
-  float weight = sceneWeight(1.0);
-
-  if (weight <= 0.001) {
-    return vec4(0.0);
-  }
-
-  float line = 0.0;
-  float activeLine = 0.0;
-  float nodes = 0.0;
-  float activeNodes = 0.0;
-  vec2 cursorPosition = uTimelineNodes[0].xy;
-  float travel = clamp(uSectionProgress, 0.0, 1.0) * max(1.0, uTimelineCount - 1.0);
-  travel += sin(uTime * 0.55) * 0.055;
-
-  for (int index = 0; index < 12; index += 1) {
-    if (float(index) >= uTimelineCount) {
-      continue;
-    }
-
-    vec3 node = uTimelineNodes[index];
-    float nodeDistance = metricDistance(vUv, node.xy);
-    nodes = max(nodes, ringMask(nodeDistance, 7.0, 1.15) * 0.34);
-    activeNodes = max(
-      activeNodes,
-      ringMask(nodeDistance, 11.0 + uInteractionEnergy * 4.0, 1.45) * node.z
-    );
-
-    if (float(index + 1) < uTimelineCount) {
-      vec2 nextNode = uTimelineNodes[index + 1].xy;
-      float segment = lineMask(
-        segmentDistance(vUv, node.xy, nextNode),
-        0.72 + min(abs(uScrollVelocity), 2.0) * 0.18
-      );
-      float segmentActivity = exp(-2.8 * abs(float(index) + 0.5 - travel));
-      line = max(line, segment * 0.18);
-      activeLine = max(activeLine, segment * segmentActivity * 0.78);
-
-      if (travel >= float(index) && travel <= float(index + 1)) {
-        cursorPosition = mix(node.xy, nextNode, fract(travel));
-      }
-    }
-  }
-
-  float cursor = 1.0 - smoothstep(
-    3.0 / max(uResolution.y, 1.0),
-    14.0 / max(uResolution.y, 1.0),
-    metricDistance(vUv, cursorPosition)
-  );
-  float alpha = clamp(
-    line + nodes + activeLine + activeNodes + cursor * 0.9,
-    0.0,
-    0.9
-  );
-  vec3 color = mix(
-    uSilver,
-    uSignal,
-    clamp(activeLine + activeNodes + cursor, 0.0, 1.0)
-  );
-  return vec4(color, alpha * weight);
 }
 
 vec4 projectsScene() {
@@ -291,12 +223,10 @@ vec4 logsScene() {
 }
 
 void main() {
-  vec4 timeline = timelineScene();
   vec4 projects = projectsScene();
   vec4 logs = logsScene();
-  float alpha = clamp(timeline.a + projects.a + logs.a, 0.0, 0.9);
+  float alpha = clamp(projects.a + logs.a, 0.0, 0.9);
   vec3 weightedColor =
-    timeline.rgb * timeline.a +
     projects.rgb * projects.a +
     logs.rgb * logs.a;
 
@@ -499,12 +429,8 @@ export function createArchiveWebglRenderer(
     "uResolution",
     "uTime",
     "uScenePosition",
-    "uSectionProgress",
-    "uScrollVelocity",
     "uInteractionEnergy",
     "uLogProgress",
-    "uTimelineCount",
-    "uTimelineNodes[0]",
     "uProjectChoiceCount",
     "uProjectChoices[0]",
     "uProjectDetailAvailable",
@@ -517,15 +443,12 @@ export function createArchiveWebglRenderer(
     "uLogReaderNodes[0]",
     "uBone",
     "uSignal",
-    "uSilver",
   ] as const;
   const uniforms = Object.fromEntries(
     uniformNames.map((name) => [name, getUniform(gl, program, name)]),
   ) as Record<(typeof uniformNames)[number], WebGLUniformLocation>;
   const bone = resolveColor(options.palette.bone, "#f7f1e9");
   const signal = resolveColor(options.palette.signal, "#e6653c");
-  const silver = resolveColor(options.palette.silver, "#9a948f");
-  const timelineBuffer = new Float32Array(MAX_TIMELINE_NODES * 3);
   const projectChoiceBuffer = new Float32Array(MAX_PROJECT_CHOICES * 3);
   const projectNodeBuffer = new Float32Array(MAX_PROJECT_NODES * 2);
   const logReaderBuffer = new Float32Array(MAX_LOG_READER_NODES * 2);
@@ -578,13 +501,6 @@ export function createArchiveWebglRenderer(
       gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
     }
 
-    const timelineCount = fillPoints(
-      timelineBuffer,
-      snapshot.semantics.timelineNodes,
-      snapshot,
-      MAX_TIMELINE_NODES,
-      3,
-    );
     const projectChoiceCount = fillPoints(
       projectChoiceBuffer,
       snapshot.semantics.projectChoices,
@@ -623,12 +539,8 @@ export function createArchiveWebglRenderer(
     gl.uniform2f(uniforms.uResolution, options.bounds.width, options.bounds.height);
     gl.uniform1f(uniforms.uTime, snapshot.elapsedMs / 1_000);
     gl.uniform1f(uniforms.uScenePosition, snapshot.scenePosition);
-    gl.uniform1f(uniforms.uSectionProgress, snapshot.sectionProgress);
-    gl.uniform1f(uniforms.uScrollVelocity, snapshot.scrollVelocity);
     gl.uniform1f(uniforms.uInteractionEnergy, snapshot.interactionEnergy);
     gl.uniform1f(uniforms.uLogProgress, snapshot.logReadProgress);
-    gl.uniform1f(uniforms.uTimelineCount, timelineCount);
-    gl.uniform3fv(uniforms["uTimelineNodes[0]"], timelineBuffer);
     gl.uniform1f(uniforms.uProjectChoiceCount, projectChoiceCount);
     gl.uniform3fv(uniforms["uProjectChoices[0]"], projectChoiceBuffer);
     gl.uniform1f(
@@ -647,7 +559,6 @@ export function createArchiveWebglRenderer(
     gl.uniform2fv(uniforms["uLogReaderNodes[0]"], logReaderBuffer);
     gl.uniform3f(uniforms.uBone, bone[0], bone[1], bone[2]);
     gl.uniform3f(uniforms.uSignal, signal[0], signal[1], signal[2]);
-    gl.uniform3f(uniforms.uSilver, silver[0], silver[1], silver[2]);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindVertexArray(null);
   };
