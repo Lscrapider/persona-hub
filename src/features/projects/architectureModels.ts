@@ -3,9 +3,14 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 
 import type { ArchitectureNode } from "./projectArchitecture";
 
+export type ModelActivity = "idle" | "transfer" | "compute" | "scan" | "read" | "write" | "generate";
+
 export type ArchitectureModel = Readonly<{
   group: THREE.Group;
   setHighlighted: (active: boolean) => void;
+  setActivity: (activity: ModelActivity, strength?: number) => void;
+  /** Advance local phases without changing the fixed architecture root. Zero delta applies a sought activity immediately. */
+  advance: (deltaSeconds: number) => void;
   /** Elapsed time in seconds. Disabling animation restores a fixed pose. */
   animate: (time: number, enabled: boolean) => void;
   dispose: () => void;
@@ -22,6 +27,16 @@ export function createArchitectureModel(kind: ArchitectureNode["model"]): Archit
   group.name = `architecture-model-${kind}`;
   const geometries = new Map<string, THREE.BufferGeometry>();
   const animatedParts: Array<(time: number) => void> = [];
+  const ownedEffectMaterials: THREE.MeshStandardMaterial[] = [];
+  const weights: Record<ModelActivity, number> = { idle: 0, transfer: 0, compute: 0, scan: 0, read: 0, write: 0, generate: 0 };
+  let targetActivity: ModelActivity = "idle";
+  let targetStrength = 0;
+  let localTime = 0;
+  let rotorTime = 0;
+  let frameRotorTime = 0;
+  const energy = () => Math.min(1, weights.transfer + weights.compute + weights.scan + weights.read + weights.write + weights.generate);
+  const amplitude = () => 0.24 + energy() * 0.76;
+
   const palette: Record<Finish, readonly [base: string, selected: string, metalness: number, roughness: number]> = {
     shell: ["#536160", "#74817a", 0.58, 0.34],
     shadow: ["#232d2e", "#354342", 0.36, 0.46],
@@ -37,6 +52,19 @@ export function createArchitectureModel(kind: ArchitectureNode["model"]): Archit
     }),
   ])) as Record<Finish, THREE.MeshStandardMaterial>;
 
+  // Indicator materials are owned independently: activity never brightens an entire housing.
+  function indicator(mesh: THREE.Mesh, modes?: readonly ModelActivity[]) {
+    const material = materials.copper.clone();
+    material.transparent = true;
+    material.depthWrite = false;
+    mesh.material = material;
+    ownedEffectMaterials.push(material);
+    animatedParts.push((time) => {
+      const strength = modes ? Math.min(1, modes.reduce((sum, mode) => sum + weights[mode], 0)) : energy();
+      material.opacity = 0.22 + strength * 0.78;
+      material.emissiveIntensity = 0.04 + strength * (0.28 + (Math.sin(time * 3) + 1) * 0.08);
+    });
+  }
   function geometry(name: Shape) {
     const existing = geometries.get(name);
     if (existing) return existing;
@@ -108,7 +136,7 @@ export function createArchitectureModel(kind: ArchitectureNode["model"]): Archit
       const blade = box([radius * 0.67, radius * 0.24, 0.026], [Math.cos(a) * radius * 0.48, Math.sin(a) * radius * 0.48, 0], i === 0 ? "copper" : "shell", wheel);
       blade.rotation.z = a + 0.45;
     }
-    animatedParts.push((time) => { wheel.rotation.z = phase + time * speed; });
+    animatedParts.push(() => { wheel.rotation.z = phase + frameRotorTime * speed; });
     return mount;
   }
   function frontScrews(width: number, height: number, center: Point, parent = group) {
@@ -132,11 +160,12 @@ export function createArchitectureModel(kind: ArchitectureNode["model"]): Archit
     for (let i = 0; i < 5; i += 1) {
       const bar = box([0.11, 0.24, 0.02], [-0.25 + i * 0.19, 0.92, 0.171], i === 3 ? "copper" : "metal");
       animatedParts.push((time) => {
-        const height = 0.12 + (1 + Math.sin(time * 1.5 + i * 1.2)) * 0.12;
+        const height = 0.12 + (1 + Math.sin(time * 1.5 + i * 1.2)) * 0.12 * amplitude();
         bar.scale.y = height; bar.position.y = 0.79 + height / 2;
       });
     }
     const scan = box([0.88, 0.012, 0.013], [0.1, 0.8, 0.187], "copper");
+    indicator(scan);
     animatedParts.push((time) => { scan.position.y = 0.81 + (time * 0.16 % 0.40); });
     part("sphere", [0.022, 0.022, 0.01], [0, 1.572, 0.109], "shadow");
     housing([1.05, 0.07, 0.36], [0, 0.035, 0.49], "shell");
@@ -161,6 +190,7 @@ export function createArchitectureModel(kind: ArchitectureNode["model"]): Archit
     const pin = part("sphere", [0.05, 0.05, 0.019], [0, 1, 0.20], "paper");
     animatedParts.push((time) => { const p = (time * 0.3) % 1; pin.position.set(-0.057 + p * 0.194, 0.688 + p * 0.564, 0.20); });
     const scan = box([0.44, 0.014, 0.012], [0, 0.7, 0.186], "copper");
+    indicator(scan);
     animatedParts.push((time) => { scan.position.y = 0.65 + time * 0.18 % 0.63; });
     housing([0.39, 0.12, 0.022], [0, 0.44, 0.158], "shell");
     box([0.25, 0.025, 0.014], [0, 0.44, 0.177], "paper");
@@ -179,7 +209,8 @@ export function createArchitectureModel(kind: ArchitectureNode["model"]): Archit
       rotor([-0.25, y, 0.478], 0.128, 2.1 + level * 0.4, level);
       for (let i = 0; i < 3; i += 1) box([0.29, 0.018, 0.018], [0.14, y + 0.07 - i * 0.06, 0.476], "shadow");
       const activity = box([0.041, 0.033, 0.022], [0.35, y, 0.484], "copper");
-      animatedParts.push((time) => { activity.position.y = y + Math.sin(time * 2.2 + level * 2) * 0.075; });
+      indicator(activity, ["compute", "generate", "read", "write"]);
+      animatedParts.push((time) => { activity.position.y = y + Math.sin(time * 2.2 + level * 2) * 0.075 * amplitude(); });
       frontScrews(0.84, 0.24, [0, y, 0.478]);
     }
     for (const x of [-0.515, 0.515]) box([0.032, 1.46, 0.036], [x, 0.94, 0.49], "metal");
@@ -197,13 +228,40 @@ export function createArchitectureModel(kind: ArchitectureNode["model"]): Archit
       face.rotation.x = Math.PI / 2;
       rotor([x, y, z + 0.326], 0.207, 1.25 + i * 0.5, i * 0.7);
       const core = box([0.085, 0.085, 0.05], [x, y, z + 0.385], "copper");
-      animatedParts.push((time) => { core.rotation.z = time * -0.8 + i; core.position.z = z + 0.385 + Math.sin(time * 1.7 + i) * 0.025; });
+      indicator(core, ["compute", "generate"]);
+      animatedParts.push((time) => { core.rotation.z = frameRotorTime * -0.8 + i; core.position.z = z + 0.385 + Math.sin(time * 1.7 + i) * 0.025 * amplitude(); });
       for (const side of [-1, 1]) box([0.019, 0.22, 0.25], [x + side * 0.294, y, z], "shadow");
       frontScrews(0.49, 0.43, [x, y, z + 0.30]);
     });
     strut([-0.45, 0.7, 0.05], [0, 1.17, -0.22], 0.045);
     strut([0.45, 0.7, 0.05], [0, 1.17, -0.22], 0.045);
     housing([0.07, 0.55, 0.07], [0, 0.43, -0.22], "metal");
+    // OCR presents a small document over the front processing socket; only scan activity reveals it.
+    const document = new THREE.Group();
+    document.name = "worker-ocr-document";
+    document.position.set(0.45, 0.56, 0.66);
+    group.add(document);
+    const page = box([0.36, 0.37, 0.008], [0, 0, 0], "paper", document);
+    const rows = Array.from({ length: 4 }, (_, row) =>
+      box([0.24 - row % 2 * 0.045, 0.013, 0.009], [-0.018, 0.11 - row * 0.069, 0.009], "shadow", document));
+    const sweep = box([0.32, 0.018, 0.012], [0, 0, 0.021], "copper", document);
+    const scanMaterials = [page, ...rows, sweep].map((mesh) => {
+      const material = (mesh.material as THREE.MeshStandardMaterial).clone();
+      material.transparent = true;
+      material.depthWrite = false;
+      material.opacity = 0;
+      mesh.material = material;
+      mesh.castShadow = false;
+      ownedEffectMaterials.push(material);
+      return material;
+    });
+    animatedParts.push((time) => {
+      const strength = weights.scan;
+      document.visible = strength > 0.005;
+      for (const material of scanMaterials) material.opacity = strength * 0.94;
+      sweep.position.y = Math.sin(time * 2.7) * 0.145;
+      scanMaterials[scanMaterials.length - 1]!.emissiveIntensity = strength * 0.55;
+    });
   }
   function queue() {
     pedestal(1.76, 1.0);
@@ -228,6 +286,7 @@ export function createArchitectureModel(kind: ArchitectureNode["model"]): Archit
     for (const z of [-0.44, 0.44]) housing([0.10, 0.94, 0.10], [0.62, 0.64, z], "metal");
     housing([0.10, 0.08, 0.98], [0.62, 1.15, 0], "metal");
     const scanner = box([0.016, 0.045, 0.58], [0.62, 1.08, 0], "copper");
+    indicator(scanner);
     animatedParts.push((time) => { scanner.position.y = 0.83 + (1 + Math.sin(time * 2)) * 0.10; });
   }
   function database() {
@@ -239,9 +298,19 @@ export function createArchitectureModel(kind: ArchitectureNode["model"]): Archit
       cylinder(0.60, 0.036, [0, y - 0.18, 0], "shadow");
       const orbit = new THREE.Group(); orbit.position.y = y + 0.095; group.add(orbit);
       const arc = part("arc", [0.595, 0.595, 0.595], [0, 0, 0], "copper", orbit); arc.rotation.x = Math.PI / 2;
+      indicator(arc, ["read"]);
       part("sphere", [0.037, 0.025, 0.037], [0.595, 0, 0], "paper", orbit);
       animatedParts.push((time) => { orbit.rotation.y = time * (0.65 + layer * 0.2) + layer * 1.8; });
-      for (let i = 0; i < 3; i += 1) box([0.055, 0.035, 0.022], [-0.1 + i * 0.10, y - 0.045, 0.578], i === layer ? "copper" : "shadow");
+      for (let i = 0; i < 3; i += 1) {
+        const cell = box([0.055, 0.035, 0.022], [-0.1 + i * 0.10, y - 0.045, 0.578], "copper");
+        indicator(cell, ["write"]);
+        const material = cell.material as THREE.MeshStandardMaterial;
+        animatedParts.push((time) => {
+          const beat = Math.pow((Math.sin(time * 5 - layer * 1.3 - i * 0.8) + 1) / 2, 3);
+          material.opacity = 0.15 + weights.write * (0.25 + beat * 0.60);
+          cell.scale.z = 0.022 + weights.write * beat * 0.026;
+        });
+      }
     }
     cylinder(0.47, 0.025, [0, 1.482, 0], "shadow");
     const head = new THREE.Group(); head.position.y = 1.51; group.add(head);
@@ -264,10 +333,12 @@ export function createArchitectureModel(kind: ArchitectureNode["model"]): Archit
     }
     for (let i = 0; i < 4; i += 1) {
       const cell = box([0.10, 0.035, 0.37], [-0.2 + i * 0.13, 0.68, 0], "copper");
-      animatedParts.push((time) => { cell.scale.y = 0.025 + (1 + Math.sin(time * 2.5 - i * 0.8)) * 0.065; cell.position.y = 0.66 + cell.scale.y / 2; });
+      indicator(cell);
+      animatedParts.push((time) => { cell.scale.y = 0.025 + (1 + Math.sin(time * 2.5 - i * 0.8)) * 0.065 * amplitude(); cell.position.y = 0.66 + cell.scale.y / 2; });
     }
     for (const side of [-1, 1]) {
       const signal = box([0.07, 0.019, 0.17], [0, 0.445, side * 0.49], "copper");
+      indicator(signal);
       animatedParts.push((time) => { signal.position.x = Math.sin(time * 1.9 + side) * 0.43; });
     }
   }
@@ -280,10 +351,12 @@ export function createArchitectureModel(kind: ArchitectureNode["model"]): Archit
       housing([0.39, 0.21, 0.025], [x, y + 0.005, z + 0.301], "shadow");
       box([0.22, 0.045, 0.025], [x - 0.03, y + 0.04, z + 0.325], "paper");
       const led = box([0.055, 0.032, 0.018], [x - 0.13, y - 0.06, z + 0.327], "copper");
+      indicator(led, ["read", "write"]);
       animatedParts.push((time) => { led.position.x = x + Math.sin(time * 1.8 - i * 0.75) * 0.13; });
       for (const side of [-1, 1]) box([0.024, 0.43, 0.03], [x + side * 0.26, y, z + 0.3], "metal");
     });
     const scanner = box([1.23, 0.027, 0.021], [0, 0.4, 0.65], "copper");
+    indicator(scanner);
     animatedParts.push((time) => { scanner.position.y = 0.26 + (1 + Math.sin(time * 1.2)) * 0.21; });
   }
   function external() {
@@ -316,13 +389,13 @@ export function createArchitectureModel(kind: ArchitectureNode["model"]): Archit
       const hinge = new THREE.Group(); hinge.position.set(side * 0.52, 0.87, 0); group.add(hinge);
       housing([0.42, 0.035, 0.81], [side * 0.21, 0, 0], "metal", hinge);
       box([0.33, 0.008, 0.026], [side * 0.21, 0.025, 0.31], "copper", hinge);
-      animatedParts.push((time) => { hinge.rotation.z = side * (0.65 + Math.sin(time * 1.15 + side * 0.6) * 0.12); });
+      animatedParts.push((time) => { hinge.rotation.z = side * (0.65 + Math.sin(time * 1.15 + side * 0.6) * 0.12 * amplitude()); });
     }
     for (let i = 0; i < 3; i += 1) {
       const sheet = new THREE.Group(); group.add(sheet);
       housing([0.54, 0.055, 0.48], [0, 0, 0], i === 1 ? "copper" : "paper", sheet);
       for (let line = 0; line < 3; line += 1) box([0.30 - line * 0.045, 0.011, 0.019], [-0.03, 0.035, -0.1 + line * 0.08], "shadow", sheet);
-      animatedParts.push((time) => { sheet.position.set(0, 0.89 + i * 0.16 + Math.sin(time * 1.35 - i * 0.8) * 0.055, -0.02); sheet.rotation.set(0.08, -0.20 + i * 0.17 + Math.sin(time * 0.6) * 0.08, 0); });
+      animatedParts.push((time) => { sheet.position.set(0, 0.89 + i * 0.16 + Math.sin(time * 1.35 - i * 0.8) * 0.055 * amplitude(), -0.02); sheet.rotation.set(0.08, -0.20 + i * 0.17 + Math.sin(time * 0.6) * 0.08 * amplitude(), 0); });
     }
   }
   function repository() {
@@ -336,7 +409,7 @@ export function createArchitectureModel(kind: ArchitectureNode["model"]): Archit
       housing([0.12, 0.235, 0.97], [-0.57, 0, 0], layer === 3 ? "copper" : "metal", stack);
       for (let line = 0; line < 3; line += 1) box([0.86, 0.008, 0.013], [0.07, -0.045 + line * 0.043, 0.45], "shell", stack);
       box([0.18, 0.03, 0.12], [0.26, 0.105, 0.49], "copper", stack);
-      animatedParts.push((time) => { stack.position.set((layer % 2 === 0 ? -0.045 : 0.045) + Math.sin(time * 1.05 - layer * 0.9) * 0.065, y, 0); });
+      animatedParts.push((time) => { stack.position.set((layer % 2 === 0 ? -0.045 : 0.045) + Math.sin(time * 1.05 - layer * 0.9) * 0.065 * amplitude(), y, 0); });
     }
     const top = 1.29;
     strut([-0.18, top, -0.27], [-0.18, top, 0.26], 0.018, "copper");
@@ -368,6 +441,7 @@ export function createArchitectureModel(kind: ArchitectureNode["model"]): Archit
   function animate(time: number, enabled: boolean) {
     if (disposed) return;
     const frameTime = enabled && Number.isFinite(time) ? time : 0;
+    frameRotorTime = frameTime;
     for (const update of animatedParts) update(frameTime);
   }
   animate(0, false);
@@ -380,6 +454,28 @@ export function createArchitectureModel(kind: ArchitectureNode["model"]): Archit
       materials.copper.emissiveIntensity = active ? 0.29 : 0.13;
       materials.screen.emissiveIntensity = active ? 0.27 : 0.16;
     },
+    setActivity(activity, strength = 1) {
+      if (disposed) return;
+      targetActivity = activity;
+      targetStrength = activity === "idle" ? 0 : THREE.MathUtils.clamp(Number.isFinite(strength) ? strength : 0, 0, 1);
+    },
+    advance(deltaSeconds) {
+      if (disposed || !Number.isFinite(deltaSeconds) || deltaSeconds < 0) return;
+      const dt = Math.min(deltaSeconds, 0.1);
+      // Exponential blending is frame-rate independent; a zero-delta seek updates the effect without moving parts.
+      const blend = dt === 0 ? 1 : 1 - Math.exp(-dt * 9);
+      for (const mode of Object.keys(weights) as ModelActivity[]) {
+        const target = mode === targetActivity ? targetStrength : 0;
+        weights[mode] += (target - weights[mode]) * blend;
+      }
+      localTime += dt * (0.22 + energy() * 1.04);
+      const computation = Math.min(1, weights.compute + weights.generate);
+      rotorTime += dt * (0.22 + computation * 1.12 + weights.transfer * 0.35 + weights.read * 0.45 + weights.write * 0.50);
+      frameRotorTime = rotorTime;
+      for (const update of animatedParts) update(localTime);
+      group.userData.activity = targetActivity;
+      group.userData.activityStrength = energy();
+    },
     animate,
     dispose() {
       if (disposed) return;
@@ -388,6 +484,8 @@ export function createArchitectureModel(kind: ArchitectureNode["model"]): Archit
       group.clear();
       for (const buffer of geometries.values()) buffer.dispose();
       for (const material of Object.values(materials)) material.dispose();
+      for (const material of ownedEffectMaterials) material.dispose();
+      ownedEffectMaterials.length = 0;
       geometries.clear();
       animatedParts.length = 0;
     },

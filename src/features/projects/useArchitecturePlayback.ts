@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 
 import type { ArchitectureRenderer } from "./architectureRenderer";
 import type { ArchitectureFlowStep } from "./projectArchitecture";
+import { ARCHITECTURE_STEP_MS } from "./architectureTiming";
 
 /** Frame progress stays outside React; only semantic step changes rerender UI. */
 export function useArchitecturePlayback(
@@ -43,7 +44,7 @@ export function useArchitecturePlayback(
     let visible = false;
     let finished = false;
     const tick = (time: number) => {
-      if (previous) progress.current = Math.min(1, progress.current + Math.min(time - previous, 80) * speed / 3600);
+      if (previous) progress.current = Math.min(1, progress.current + Math.min(time - previous, 80) * speed / ARCHITECTURE_STEP_MS);
       previous = time;
       renderer.current?.setPlayback({ ...step, progress: progress.current });
       const total = (index + progress.current) / steps.length;

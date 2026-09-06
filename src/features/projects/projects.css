@@ -141,8 +141,11 @@
 .architecture__node:focus-visible { outline: 2px solid var(--atlas-signal); outline-offset: 4px; background: #292d2aaa; }
 .architecture__node:active { background: #bd8e6822; }
 .architecture__stage:not([data-renderer="ready"]) .architecture__canvas { visibility: hidden; }
-.architecture__stage:not([data-renderer="ready"]) .architecture__nodes { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: center; gap: 2rem; block-size: 100%; padding: 2rem; }
-.architecture__stage:not([data-renderer="ready"]) .architecture__node { position: relative; inset: auto !important; inline-size: auto !important; block-size: auto !important; min-block-size: 7rem; transform: none; border: 1px solid #586064; background: #282f32; }
+/* Loading is an empty, stable stage; the module list is only an error fallback. */
+.architecture__stage[data-renderer="pending"] .architecture__nodes { visibility: hidden; }
+.architecture__loading { display: none; position: absolute; inset: 50% 1.5rem auto; margin: 0; color: #b5bdbf; font: 0.73rem var(--font-body); text-align: center; pointer-events: none; }
+.architecture__stage[data-renderer="pending"] .architecture__loading { display: block; animation: architecture-loading-reveal 1ms 180ms both; }
+@keyframes architecture-loading-reveal { from { visibility: hidden; opacity: 0; } to { visibility: visible; opacity: 1; } }
 .architecture__footer { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 1.5rem; border-block-start: 1px solid #303739; min-block-size: 3.75rem; }
 .architecture__footer p { margin: 0; font-size: 0.8rem; color: #bbc0bb; }
 .architecture__footer > span { display: flex; flex-shrink: 0; align-items: center; gap: 0.7rem; color: var(--atlas-muted); font: 0.6rem var(--font-mono); letter-spacing: 0.08em; }
@@ -190,8 +193,6 @@ html[data-effect-mode="static"] .project-atlas *, html[data-effect-mode="static"
   .architecture__stage { block-size: 34rem; }
   .architecture__node { padding: 0.6rem; gap: 0.4rem; font-size: clamp(0.63rem, 2.75vw, 1rem); }
   .architecture__node-kind, .architecture__node-footer { font-size: 0.54rem; }
-  .architecture__stage:not([data-renderer="ready"]) .architecture__nodes { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 1rem; gap: 1rem; }
-  .architecture__stage:not([data-renderer="ready"]) .architecture__node { min-block-size: 5.4rem; }
   .architecture__footer { padding: 0.8rem; min-block-size: 4.5rem; }
   .architecture__footer p { font-size: 0.72rem; }
   .architecture__footer > span { display: none; }
@@ -212,10 +213,10 @@ html[data-effect-mode="static"] .project-atlas *, html[data-effect-mode="static"
 .architecture--spatial .architecture__node strong span { color: var(--atlas-signal); }
 .architecture--spatial .architecture__node-kind { justify-content: center; font-size: 0.58rem; }
 .architecture--spatial .architecture__node[data-highlighted="true"] { color: #f5d4b5; }
+.architecture--spatial .architecture__node[data-processing="true"] { color: #f5d4b5; }
 .architecture--spatial .architecture__node:hover { color: #f5d4b5; }
 .architecture--spatial .architecture__stage[data-renderer="ready"] .architecture__node[data-placement="above"] { transform: translate(-50%, -100%); }
 .architecture--spatial .architecture__node:focus-visible { outline: 2px solid #e4cab0; outline-offset: 2px; }
-.architecture--spatial .architecture__stage:not([data-renderer="ready"]) .architecture__node { min-block-size: 5rem; max-inline-size: none; }
 .architecture__view-controls { display: flex; margin-inline-start: auto; gap: 0.3rem; }
 .architecture__view-controls button { min-inline-size: 2.75rem; justify-content: center; margin: 0; font-size: 0.95rem; border-inline-start: 1px solid #303d44; }
 .architecture__view-controls button:last-child { font-size: 0.7rem; padding-inline: 0.4rem; }
@@ -246,6 +247,7 @@ html[data-effect-mode="static"] .project-atlas *, html[data-effect-mode="static"
 }
 .architecture__edge-labels { position: absolute; inset: 0; pointer-events: none; }
 .architecture__edge-label { position: absolute; padding: 0.2rem 0.4rem; background: #1b242bed; border-radius: 2px; transform: translate(-50%, -50%); color: #d4bca3; font: 0.57rem var(--font-body); white-space: nowrap; }
+.architecture__edge-label[data-request="true"] { background: transparent; color: #e3bb94; font-size: 0.65rem; transform: translate(-50%, calc(-100% - 7px)); text-shadow: 0 1px 4px #141c21; }
 .architecture__stage:not([data-renderer="ready"]) .architecture__edge-labels { display: none; }
 .architecture__boundaries { position: absolute; inset: 0; pointer-events: none; }
 .architecture__boundary { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; transform: translate(-50%, 0); color: #c4ccca; white-space: nowrap; }
@@ -262,6 +264,17 @@ html[data-effect-mode="static"] .project-atlas *, html[data-effect-mode="static"
   .architecture--spatial .architecture__node[data-emphasis="primary"] { max-inline-size: 9rem; padding: 0.3rem; font-size: 0.63rem; }
   .architecture--spatial .architecture__node[data-emphasis="primary"] .architecture__node-kind { font-size: 0.5rem; }
   .architecture--spatial .architecture__node[data-emphasis="support"] { font-size: 0.45rem; padding: 0.2rem; }
+}
+/* Runtime activity takes the existing caption row, without adding a badge or panel. */
+.architecture__activity-cue { color: #f6d3aa; font: 0.68rem/1.25 var(--font-body); letter-spacing: 0.03em; white-space: nowrap; }
+.architecture__activity-cue[hidden] { display: none !important; }
+.architecture__node:has(.architecture__activity-cue:not([hidden])) .architecture__node-kind { display: none; }
+.architecture__stage[data-renderer="fallback"] .architecture__nodes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: center; gap: 1rem 2rem; padding: 2rem; overflow: auto; }
+.architecture--spatial .architecture__stage[data-renderer="fallback"] .architecture__node { position: relative; inset: auto !important; inline-size: auto; max-inline-size: none; min-block-size: 4rem; padding: 0.75rem 0; transform: none; align-items: flex-start; text-align: start; border-block-end: 1px solid #354047; border-radius: 0; background: transparent; }
+.architecture__stage[data-renderer="fallback"] .architecture__activity-cue,
+.architecture__stage[data-renderer="fallback"] .architecture__narration { display: none; }
+@media (max-width: 640px) {
+  .architecture__stage[data-renderer="fallback"] .architecture__nodes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem 1rem; padding: 1rem; }
 }
 .architecture__mobile-index { display: none; }
 @media (max-width:640px) {

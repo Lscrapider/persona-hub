@@ -48,6 +48,8 @@ export function ProjectArchitectureStage({ architecture, locale, onOpenNode, pau
     const element = host.current;
     const surface = canvas.current;
     if (!element || !surface) return;
+    element.dataset.renderer = "pending";
+    element.setAttribute("aria-busy", "true");
     let cancelled = false;
     let started = false;
     const start = async () => {
@@ -65,15 +67,20 @@ export function ProjectArchitectureStage({ architecture, locale, onOpenNode, pau
             if (node?.documents.length) onOpen.current(node);
           },
           onHover(id) { setHighlighted(id); renderer.current?.setHighlight(id); },
-          onAvailability(available) { setFailed(!available); },
+          onAvailability(available) {
+            element.setAttribute("aria-busy", "false");
+            setFailed(!available);
+          },
         });
         renderer.current.setMotion(motion.current);
         renderer.current.setFlow(flowRef.current);
         if (playbackRef.current) renderer.current.setPlayback({ ...playbackRef.current, progress: 0 });
+        element.setAttribute("aria-busy", "false");
         setFailed(false);
       } catch {
         if (cancelled) return;
         element.dataset.renderer = "fallback";
+        element.setAttribute("aria-busy", "false");
         setFailed(true);
       }
     };
@@ -105,7 +112,7 @@ export function ProjectArchitectureStage({ architecture, locale, onOpenNode, pau
     renderer.current?.setPlayback(null);
     highlight(null);
     const selected = architecture.flows.find((flow) => flow.id === id);
-    flowRef.current = selected?.nodes ?? null;
+    flowRef.current = selected?.steps?.length ? null : selected?.nodes ?? null;
     renderer.current?.setFlow(flowRef.current);
   };
   const activeNode = architecture.nodes.find((node) => node.id === highlighted);
@@ -129,18 +136,28 @@ export function ProjectArchitectureStage({ architecture, locale, onOpenNode, pau
         <span>{zh ? "拖动旋转 · 点击模型探索" : "Drag to orbit · Select a model"}</span>
       </div>
       <div
+        aria-busy="true"
         aria-label={packageView ? zh ? "三维规范包结构，线路表示组织与引用关系" : "3D guidance package. Lines show organization and references." : zh ? "三维系统架构，服务模型之间的线路表示通信和依赖" : "3D system architecture. Connections represent communication and dependencies."}
         className="architecture__stage"
         data-renderer="pending"
         ref={host}
         role="group"
       >
+        <span className="architecture__loading" role="status">{zh ? "正在准备三维架构…" : "Preparing the 3D architecture…"}</span>
         <canvas aria-hidden="true" className="architecture__canvas" ref={canvas} />
         <div aria-hidden="true" className="architecture__boundaries">
           {architecture.groups.map((boundary) => <div className="architecture__boundary" data-boundary-id={boundary.id} key={boundary.id}><strong>{boundary.label}</strong></div>)}
         </div>
         <div aria-hidden="true" className="architecture__edge-labels">
-          {architecture.edges.map((edge, index) => <span className="architecture__edge-label" data-edge-index={index} key={`${edge.from}-${edge.to}-${index}`}>{edge.label}</span>)}
+          {architecture.edges.map((edge, index) => <span
+            className="architecture__edge-label" data-edge-index={index} key={`${edge.from}-${edge.to}-${index}`}
+            data-transfer={zh ? "数据传输" : "DATA TRANSFER"}
+            data-compute={zh ? "处理请求" : "PROCESSING REQUEST"}
+            data-generate={zh ? "生成请求" : "GENERATION REQUEST"}
+            data-read={zh ? "读取请求" : "READ REQUEST"}
+            data-write={zh ? "写入请求" : "WRITE REQUEST"}
+            data-scan={zh ? "识别请求" : "RECOGNITION REQUEST"}
+          >{edge.label}</span>)}
         </div>
         <div className="architecture__nodes">
           {architecture.nodes.map((node) => (
@@ -150,7 +167,7 @@ export function ProjectArchitectureStage({ architecture, locale, onOpenNode, pau
               className="architecture__node"
               data-node-id={node.id}
               data-emphasis={node.emphasis}
-              data-highlighted={node.id === highlighted || (playbackStep ? node.id === playbackStep.from || node.id === playbackStep.to : activeFlow?.nodes.includes(node.id)) || undefined}
+              data-highlighted={node.id === highlighted || (!activeFlow?.steps?.length && activeFlow?.nodes.includes(node.id)) || undefined}
               data-flow-active={playbackStep?.to === node.id || undefined}
               key={node.id}
               onBlur={() => highlight(null)}
@@ -163,6 +180,18 @@ export function ProjectArchitectureStage({ architecture, locale, onOpenNode, pau
             >
               <strong>{node.label}{node.documents.length ? <span aria-hidden="true"> ↗</span> : null}</strong>
               <span className="architecture__node-kind">{node.kind}</span>
+              <span
+                aria-hidden="true"
+                className="architecture__activity-cue"
+                data-activity-cue=""
+                data-transfer={zh ? "接收中" : "RECEIVING"}
+                data-compute={zh ? "计算中" : "COMPUTING"}
+                data-scan={zh ? "扫描中" : "SCANNING"}
+                data-read={zh ? "读取中" : "READING"}
+                data-write={zh ? "写入中" : "WRITING"}
+                data-generate={zh ? "生成中" : "GENERATING"}
+                hidden
+              />
             </button>
           ))}
         </div>
@@ -194,7 +223,14 @@ export function ProjectArchitectureStage({ architecture, locale, onOpenNode, pau
         </div>
         <span><span aria-hidden="true" className="architecture__legend-line" />{zh ? "实线：当前关系 · 虚线：设计演进" : "SOLID: CURRENT · DASHED: PLANNED"}</span>
       </div>
-      {failed ? <p className="architecture__fallback" role="status">{zh ? "当前显示架构模块列表。" : "Showing the architecture module list."} <button type="button" onClick={() => { setFailed(false); setRetry((value) => value + 1); }}>{zh ? "重试三维视图" : "Retry 3D view"}</button></p> : null}
+      {failed ? <p className="architecture__fallback" role="status">{zh ? "当前显示架构模块列表。" : "Showing the architecture module list."} <button type="button" onClick={() => {
+        if (host.current) {
+          host.current.dataset.renderer = "pending";
+          host.current.setAttribute("aria-busy", "true");
+        }
+        setFailed(false);
+        setRetry((value) => value + 1);
+      }}>{zh ? "重试三维视图" : "Retry 3D view"}</button></p> : null}
       <details className="architecture__mobile-index">
         <summary>{zh ? "模块与相关文档" : "Modules and documentation"}</summary>
         {architecture.groups.map((boundary) => <div className="architecture__module-group" key={boundary.id}><h4>{boundary.label}</h4><div>{architecture.nodes.filter((node) => boundary.nodes.includes(node.id)).map((node) => <button key={node.id} type="button" onClick={() => selectNode(node)}><strong>{node.label}</strong><span>{node.documents.length ? `${node.documents.length} ${zh ? "篇相关文档" : "related documents"}` : node.kind}</span></button>)}</div></div>)}
