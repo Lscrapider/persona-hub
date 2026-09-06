@@ -107,7 +107,7 @@
 .project-atlas__source:hover { color: var(--atlas-signal); }
 .project-atlas__source:active { color: #f0d6bd; }
 .project-atlas__selected { animation: atlas-enter 500ms var(--ease-out) both; }
-.architecture { position: relative; }
+.architecture { position: relative; container-type: inline-size; }
 .architecture__toolbar { position: relative; z-index: 2; display: flex; align-items: center; gap: 1rem; min-block-size: 3.5rem; font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.08em; }
 .architecture__label { color: var(--atlas-text); }
 .architecture__count { color: var(--atlas-muted); }
@@ -206,8 +206,9 @@ html[data-effect-mode="static"] .project-atlas *, html[data-effect-mode="static"
 
 /* Spatial architecture: real volume carries the diagram; DOM is its caption layer. */
 .architecture--spatial .architecture__stage { background: radial-gradient(ellipse at 50% 48%, #27323988, #1a222744 40%, transparent 72%); }
-/* Full architecture and every flow share one viewport, preserving model scale. */
-.architecture--spatial .architecture__stage { block-size: clamp(32rem, 43vw, 40rem); }
+/* Grow with the actual scene width, while leaving room on shorter displays.
+   One viewport rule keeps full architecture and every flow at the same scale. */
+.architecture--spatial .architecture__stage { block-size: clamp(26rem, min(44cqi, 76svh), 64rem); }
 .architecture--spatial .architecture__canvas { pointer-events: auto; touch-action: pan-y; cursor: grab; }
 .architecture--spatial .architecture__nodes { pointer-events: none; }
 .architecture--spatial .architecture__node { pointer-events: auto; min-block-size: 44px; inline-size: max-content; max-inline-size: 13rem; block-size: auto; padding: 0.35rem 0.65rem; transform: translate(-50%, 0); background: transparent; border: 0; border-radius: 3px; gap: 0.22rem; text-align: center; align-items: center; font-size: clamp(0.62rem, 0.8vw, 0.76rem); text-shadow: 0 1px 3px #10171b; }
