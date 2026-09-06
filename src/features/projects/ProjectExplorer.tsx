@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-import { CopyReveal } from "@/effects/primitives/CopyReveal";
+import { useLocaleContent } from "@/i18n/LocaleProvider";
 import type { LocaleUiCopy, ProjectRecord } from "@/lib/content/types";
-import { containsCjk } from "@/lib/typography";
 
-import { ProjectDocumentView } from "./ProjectDocument";
-import { ProjectTree } from "./ProjectTree";
+import { ProjectArchitectureStage } from "./ProjectArchitectureStage";
+import { ProjectDocumentDialog } from "./ProjectDocumentDialog";
+import { getProjectArchitecture, type ArchitectureNode } from "./projectArchitecture";
 
 type ProjectExplorerProps = Readonly<{
   copy: LocaleUiCopy["projects"];
@@ -17,168 +17,56 @@ type ProjectExplorerProps = Readonly<{
   selectedProjectId: string | null;
 }>;
 
-function getSafeExternalUrl(value: string | undefined) {
-  if (!value) {
-    return null;
-  }
-
+function safeUrl(value: string | undefined) {
   try {
-    const url = new URL(value);
-
-    if (url.protocol !== "http:" && url.protocol !== "https:") {
-      return null;
-    }
-
-    return url.href;
-  } catch {
-    return null;
-  }
+    const url = new URL(value ?? "");
+    return ["https:", "http:"].includes(url.protocol) ? url.href : null;
+  } catch { return null; }
 }
 
-function getSafeDocumentUrl(value: string | null, documentPath: string) {
-  if (!value) {
-    return null;
-  }
-
-  try {
-    const url = new URL(value);
-
-    const repositoryPath = url.pathname.replace(/\/$/u, "");
-    const encodedDocumentPath = documentPath
-      .split("/")
-      .map((segment) => encodeURIComponent(segment))
-      .join("/");
-    url.pathname = `${repositoryPath}/blob/main/${encodedDocumentPath}`;
-
-    return url.href;
-  } catch {
-    return null;
-  }
-}
-
-export function ProjectExplorer({
-  copy,
-  onSelectProject,
-  projects,
-  revealEnabled,
-  selectedProjectId,
-}: ProjectExplorerProps) {
-  const selectedProject =
-    projects.find((project) => project.id === selectedProjectId) ??
-    projects[0] ??
-    null;
-  const [activeDocumentPath, setActiveDocumentPath] = useState(
-    selectedProject?.documents[0]?.path ?? "",
-  );
-
-  if (!selectedProject) {
-    return <p className="project-explorer__empty">{copy.empty}</p>;
-  }
-
-  const activeDocument =
-    selectedProject.documents.find(
-      (document) => document.path === activeDocumentPath,
-    ) ?? selectedProject.documents[0] ?? null;
-
-  if (!activeDocument) {
-    return <p className="project-explorer__empty">{copy.empty}</p>;
-  }
-
-  const repositoryUrl = getSafeExternalUrl(selectedProject.url);
-  const sourceUrl = getSafeDocumentUrl(repositoryUrl, activeDocument.path);
-  const sortedProjects = [...projects].sort((left, right) =>
-    left.id.localeCompare(right.id),
-  );
+export function ProjectExplorer({ copy, onSelectProject, projects, selectedProjectId }: ProjectExplorerProps) {
+  const { locale } = useLocaleContent();
+  const selectedProject = projects.find((project) => project.id === selectedProjectId) ?? projects[0];
+  const [openNode, setOpenNode] = useState<ArchitectureNode | null>(null);
+  const architecture = useMemo(() => selectedProject ? getProjectArchitecture(selectedProject, locale) : null, [selectedProject, locale]);
+  const zh = locale === "zh";
+  if (!selectedProject || !architecture) return <p>{copy.empty}</p>;
+  const repositoryUrl = safeUrl(selectedProject.url);
 
   return (
-    <div
-      className="project-explorer"
-      data-physics-surface="projects"
-      data-physics-target={`projects/${selectedProject.id}`}
-      id="project-explorer-workspace"
-    >
-      <p aria-live="polite" className="project-explorer__announcement">
-        {copy.activeProject}: {selectedProject.title} / {activeDocument.path}
-      </p>
-
-      <aside
-        aria-labelledby="project-filesystem-title"
-        className="project-explorer__filesystem"
-      >
-        <div className="project-explorer__pane-heading">
-          <h3 id="project-filesystem-title">01 / {copy.filesystem}</h3>
-          <span>{selectedProject.documents.length.toString().padStart(2, "0")}</span>
-        </div>
-        <div className="project-explorer__repository-root">
-          <span aria-hidden="true">⌄</span>
-          <strong>{selectedProject.slug}</strong>
-        </div>
-        <ProjectTree
-          activePath={activeDocument.path}
-          documents={selectedProject.documents}
-          onOpenDocument={setActiveDocumentPath}
-          projectId={selectedProject.id}
-        />
-      </aside>
-
-      <ProjectDocumentView
-        copy={copy}
-        document={activeDocument}
-        project={selectedProject}
-        repositoryUrl={repositoryUrl}
-        sourceUrl={sourceUrl}
-      />
-
-      <aside
-        aria-labelledby="project-index-title"
-        className="project-explorer__projects"
-      >
-        <div className="project-explorer__pane-heading">
-          <h3 id="project-index-title">03 / {copy.indexHeading}</h3>
-          <span>{projects.length.toString().padStart(2, "0")}</span>
-        </div>
-        <ol aria-label={copy.indexLabel} className="project-explorer__choices">
-          {sortedProjects.map((project) => {
-            const isSelected = project.id === selectedProject.id;
-
-            return (
-              <li key={project.id}>
-                <button
-                  aria-controls="project-explorer-workspace"
-                  aria-pressed={isSelected}
-                  className="project-explorer__choice"
-                  data-project-id={project.id}
-                  data-runtime-activate-action="select"
-                  data-runtime-hover-action="inspect"
-                  data-runtime-target={`projects/${project.id}`}
-                  data-selected={isSelected || undefined}
-                  data-webgl-anchor="project-choice"
-                  onClick={() => onSelectProject(project.id)}
-                  type="button"
-                >
-                  <span aria-hidden="true" className="project-explorer__choice-id">
-                    {project.id}
-                  </span>
-                  <span className="project-explorer__choice-copy">
-                    <span
-                      className="project-explorer__choice-name"
-                      data-cjk-heading={containsCjk(project.title) || undefined}
-                    >
-                      <CopyReveal enabled={revealEnabled} text={project.title} />
-                    </span>
-                    <span className="project-explorer__choice-status">
-                      <CopyReveal
-                        enabled={revealEnabled}
-                        text={`${project.status} / ${project.year}`}
-                      />
-                    </span>
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-      </aside>
+    <div className="project-atlas" id="project-explorer-workspace">
+      <nav aria-label={copy.indexLabel} className="project-atlas__index">
+        {projects.map((project) => (
+          <button
+            aria-controls="project-atlas-selected"
+            aria-pressed={selectedProject.id === project.id}
+            className="project-atlas__project"
+            data-project-id={project.id}
+            data-runtime-target={`projects/${project.id}`}
+            data-runtime-activate-action="select"
+            key={project.id}
+            onClick={() => { setOpenNode(null); onSelectProject(project.id); }}
+            type="button"
+          >
+            <span className="project-atlas__project-meta">{project.year}<span aria-hidden="true">↗</span></span>
+            <strong>{project.title}</strong>
+            <span className="project-atlas__project-description">{project.summary}</span>
+          </button>
+        ))}
+      </nav>
+      <div className="project-atlas__selected" id="project-atlas-selected" key={selectedProject.id}>
+        <header className="project-atlas__intro">
+          <div>
+            <p className="project-atlas__eyebrow"><span className="project-atlas__status-dot" aria-hidden="true" />{selectedProject.status}<span>/</span>{selectedProject.year}</p>
+            <h3>{selectedProject.title}</h3>
+          </div>
+          <p className="project-atlas__description">{selectedProject.summary}<span>{selectedProject.slug === "scrapider-guidelines" ? zh ? "从规范入口，展开技术栈参考与审查规则。" : "Explore stack references and review rules from the Skill entry." : zh ? "点击服务模型，阅读它所承载的业务设计。" : "Select a service model to read the designs it owns."}</span></p>
+          {repositoryUrl ? <a className="project-atlas__source" href={repositoryUrl} rel="noreferrer" target="_blank">GitHub<span aria-hidden="true">↗</span></a> : null}
+        </header>
+        <ProjectArchitectureStage architecture={architecture} locale={locale} onOpenNode={setOpenNode} paused={openNode !== null} />
+        <div className="project-atlas__stack"><span>{zh ? "构建于" : "BUILT WITH"}</span>{selectedProject.stack.map((technology) => <span key={technology}>{technology}</span>)}</div>
+      </div>
+      {openNode ? <ProjectDocumentDialog key={`${selectedProject.id}-${openNode.id}`} project={selectedProject} node={openNode} locale={locale} onClose={() => setOpenNode(null)} /> : null}
     </div>
   );
 }

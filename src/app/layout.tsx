@@ -28,6 +28,7 @@ export const metadata: Metadata = {
     template: "%s | Scra Atlas",
   },
   description: "A living personal technical archive.",
+  icons: { icon: "/favicon.ico" },
 };
 
 type RootLayoutProps = Readonly<{

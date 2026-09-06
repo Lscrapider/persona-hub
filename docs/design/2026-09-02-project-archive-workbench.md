@@ -1,6 +1,6 @@
 # Project Archive Workbench Design
 
-**Status:** approved  
+**Status:** superseded by the user-directed spatial architecture redesign on 2026-09-06; see `2026-09-06-spatial-project-architecture.md`
 **Date:** 2026-09-02
 
 ## Purpose

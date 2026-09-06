@@ -32,9 +32,9 @@
       "label": "Projects",
       "href": "/#projects",
       "surface": "void",
-      "eyebrow": "PROJECT DATABASE",
+      "eyebrow": "SYSTEMS, OPENED UP",
       "title": "Projects",
-      "summary": "Projects organize real systems as an explorable archive tree, with each branch tied to evidence and implementation context.",
+      "summary": "Every project is a system of connected parts. Explore the architecture, then open the thinking behind each module.",
       "status": "PROJECTS INDEXED"
     },
     "logs": {
