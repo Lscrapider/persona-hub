@@ -20,7 +20,7 @@ export function createTimelineRenderer(host: HTMLElement, canvas: HTMLCanvasElem
     disposed = true;
     cancelAnimationFrame(raf); raf = 0;
     canvas.dataset.animating = "false";
-    host.querySelectorAll<HTMLButtonElement>("[data-companion-hit]").forEach((button) => {
+    host.querySelectorAll<HTMLButtonElement>("[data-companion-hit], [data-artifact-hit]").forEach((button) => {
       button.style.visibility = "hidden";
       button.tabIndex = -1;
     });
@@ -65,6 +65,7 @@ export function createTimelineRenderer(host: HTMLElement, canvas: HTMLCanvasElem
     scene.add(new THREE.HemisphereLight("#fffaf0", "#887460", 2.5));
     const key = new THREE.DirectionalLight("#fff6df", 4.1); key.position.set(-4, 7, 10); scene.add(key);
     const fill = new THREE.DirectionalLight("#e0e7eb", 2.2); fill.position.set(6, -3, 5); scene.add(fill);
+    const rim = new THREE.DirectionalLight("#e6edf2", 1.5); rim.position.set(3, 4, -9); scene.add(rim);
     const assemblies = records.map((record) => {
       const model = createTimelineModel(record, materials);
       scene.add(model.group);
@@ -76,6 +77,11 @@ export function createTimelineRenderer(host: HTMLElement, canvas: HTMLCanvasElem
     scene.add(companion.group);
     const beak = companion.group.getObjectByName("timeline-companion-contact");
     const hit = host.querySelector<HTMLButtonElement>("[data-companion-hit]");
+    const artifactHits = new Map<string, HTMLButtonElement>();
+    host.querySelectorAll<HTMLButtonElement>("[data-artifact-hit]").forEach((button) => {
+      const id = button.dataset.artifactHit;
+      if (id) artifactHits.set(id, button);
+    });
     const modelZone = host.querySelector<HTMLElement>(".timeline-stage__model-zone")!;
     const section = rail.closest<HTMLElement>(".timeline-section")!;
     const dockPosition = new THREE.Vector3(), perchPosition = new THREE.Vector3();
@@ -86,30 +92,18 @@ export function createTimelineRenderer(host: HTMLElement, canvas: HTMLCanvasElem
     const rotation = new THREE.Euler(0, 0, 0, "YZX");
     const pointer = new THREE.Vector2();
     let pointerPresent = false, gazeX = 0, gazeY = 0;
+    let previousYaw = 0, bank = 0;
+    const previousPosition = new THREE.Vector3();
+    let lastVy = 0, smoothedSpeed = 0, airborneLatch = false;
     let trackCurve: THREE.CatmullRomCurve3 | null = null;
     let companionInitialized = false, flight = 0, working = 0, activityTime = 0;
     let docked: typeof assemblies[number] | undefined;
-    let lastScrollAt = -Infinity, greetingAt = -Infinity, staticGreeting = false;
-    let greetingPending = false;
-    let excursion: THREE.CurvePath<THREE.Vector3> | null = null;
-    let returnRoute: THREE.CurvePath<THREE.Vector3> | null = null;
-    const routeTo = (start: THREE.Vector3, end: THREE.Vector3) => {
-      const radius = Math.max(0, Math.min(.4, (start.y - end.y) / 2, (start.x - end.x) / 2));
-      const lift = start.clone(); lift.z = end.z;
-      const corner = new THREE.Vector3(start.x, end.y, end.z);
-      const entry = corner.clone(); entry.y += radius;
-      const exit = corner.clone(); exit.x -= radius;
-      const route = new THREE.CurvePath<THREE.Vector3>();
-      // Clear the artifact's front surface before moving across its silhouette.
-      if (start.distanceTo(lift) > .001) route.add(new THREE.LineCurve3(start, lift));
-      if (lift.distanceTo(entry) > .001) route.add(new THREE.LineCurve3(lift, entry));
-      if (radius > .001) route.add(new THREE.QuadraticBezierCurve3(entry, corner, exit));
-      if (exit.distanceTo(end) > .001) route.add(new THREE.LineCurve3(exit, end));
-      if (!route.curves.length) route.add(new THREE.LineCurve3(start, end));
-      return route;
-    };
-    const excursionStartRotation = new THREE.Quaternion();
-    const excursionFacing = new THREE.Quaternion();
+    let lastScrollAt = -Infinity, staticGreeting = false;
+    // A summon is one deliberate command: fly to the requested artifact, then
+    // demonstrate its full semantic cycle once before handing control back.
+    let summon: { target: typeof assemblies[number]; elapsed: number; arrived: boolean } | null = null;
+    let flourishAt = -Infinity;
+    let hovered: typeof assemblies[number] | undefined;
     const ease = (value: number) => {
       const t = THREE.MathUtils.clamp(value, 0, 1);
       return t * t * t * (t * (t * 6 - 15) + 10);
@@ -157,9 +151,9 @@ export function createTimelineRenderer(host: HTMLElement, canvas: HTMLCanvasElem
       if (disposed || lost || !visible || document.hidden) { canvas.dataset.animating = "false"; return; }
       try {
         if (dirty) {
-          // Layout changes invalidate the world-space route; resume from the
-          // current pose instead of playing coordinates from the old viewport.
-          excursion = null; returnRoute = null; greetingPending = false; greetingAt = -Infinity;
+          // Layout changes invalidate the world-space approach; a summon flies
+          // from the current pose in the new viewport instead of an old route.
+          summon = null; flourishAt = -Infinity;
           measure();
         }
         const delta = Math.min((stamp - (lastTime || stamp)) / 1000, .04); lastTime = stamp;
@@ -176,23 +170,35 @@ export function createTimelineRenderer(host: HTMLElement, canvas: HTMLCanvasElem
           !best || Math.abs(item.y - readingY) < Math.abs(best.y - readingY) ? item : best, undefined);
         const gap = assemblies.length > 1 ? Math.min(...assemblies.slice(1).map((item, i) => Math.abs(item.y - assemblies[i]!.y))) : 3;
         const enterRadius = Math.min(.82, gap * .22), exitRadius = Math.min(1.15, gap * .32);
-        if (docked && Math.abs(docked.y - readingY) > exitRadius) docked = undefined;
-        if (!docked && nearest && Math.abs(nearest.y - readingY) < enterRadius) {
-          docked = nearest;
-          activityTime = 0;
+        if (!summon) {
+          if (docked && Math.abs(docked.y - readingY) > exitRadius) docked = undefined;
+          if (!docked && nearest && Math.abs(nearest.y - readingY) < enterRadius) {
+            docked = nearest;
+            activityTime = 0;
+          }
         }
-        const docking = docked ? 1 - THREE.MathUtils.smoothstep(Math.abs(docked.y - readingY), enterRadius * .65, enterRadius) : 0;
+        let docking = docked ? 1 - THREE.MathUtils.smoothstep(Math.abs(docked.y - readingY), enterRadius * .65, enterRadius) : 0;
         const scrolling = state.full && stamp - lastScrollAt < 140;
-        const greetingAge = state.full ? time - greetingAt : 1.8;
-        const greeting = state.full ? Math.sin(Math.PI * THREE.MathUtils.clamp(greetingAge / 3.6, 0, 1)) ** 2 : staticGreeting ? .7 : 0;
-        if (greetingAge >= 3.6 && excursion) {
-          excursion = null; returnRoute = null;
-          // A completed greeting settles on the perch, then begins a fresh
-          // inspection rather than reaching for an old, already closed page.
-          activityTime = 0;
+        if (summon) {
+          // The arrival ramp replaces proximity docking for the whole command;
+          // one full choreographed cycle after arrival, then autonomy resumes.
+          summon.elapsed += delta;
+          docked = summon.target;
+          docking = ease(Math.min(1, summon.elapsed / 1.3));
+          if (!summon.arrived && docking > .94) {
+            summon.arrived = true;
+            activityTime = 0;
+            flourishAt = time;
+          }
         }
-        const interacting = state.full ? greetingPending || excursion !== null : staticGreeting;
-        if (state.full && working > .6 && !scrolling && !interacting) activityTime += delta;
+        const summoning = summon !== null && !summon.arrived;
+        const flourishAge = state.full ? time - flourishAt : 1.8;
+        const flourish = state.full ? Math.sin(Math.PI * THREE.MathUtils.clamp(flourishAge / .75, 0, 1)) ** 2 : staticGreeting ? .7 : 0;
+        if (state.full && working > .6 && !scrolling && !summoning) activityTime += delta;
+        // A finished demonstration leaves the bird resident at its artifact,
+        // continuing its natural cycle; only reading movement (scroll), a
+        // resize or a mode change recalls it. Nulling here made the bird
+        // abandon the perch it was just asked to visit.
         const cycleDuration = docked?.record.kind === "EDUCATION" ? 7.2 : docked?.record.kind === "PREPARATION" ? 6.1 : 5.4;
         const phase = activityTime / cycleDuration;
         const activity = timelineActivity(phase);
@@ -217,10 +223,12 @@ export function createTimelineRenderer(host: HTMLElement, canvas: HTMLCanvasElem
           trackCurve.getPoint((low + high) / 2, flightPosition);
           flightPosition.x -= .62;
           flightPosition.z = 3;
-          flightPosition.y += state.full ? Math.sin(time * 2.2) * .025 : 0;
+          flightPosition.y += state.full ? Math.sin(time * 2.2) * .015 : 0;
           // A front / three-quarter resting pose; transit and contact have their
-          // own volumetric orientation, interpolated as quaternions.
-          let yaw = -Math.PI / 2 + .6 * Math.sin(time * .45);
+          // own volumetric orientation, interpolated as quaternions. Layered
+          // incommensurate sines replace one periodic sway, and the body banks
+          // slightly into yaw changes while airborne.
+          let yaw = -Math.PI / 2 - .3 * Math.sin(time * .21 + 1.3) + .17 * Math.sin(time * .47);
           let pitch = 0;
           const reach = state.full ? activity.reach * working : 0;
           if (docked) {
@@ -236,30 +244,34 @@ export function createTimelineRenderer(host: HTMLElement, canvas: HTMLCanvasElem
             yaw += Math.atan2(Math.sin(poisedYaw - yaw), Math.cos(poisedYaw - yaw)) * docking;
             pitch = Math.asin(-normal.y) * activity.orient * working;
           }
-          if (interacting) {
-            // One short excursion through the open left margin. It remains in this
-            // renderer, has no page-scroll side effects and can be interrupted.
-            // One outward look, one turn home. No oscillating whole-body yaw.
-            const turn = ease((greetingAge - 1.45) / .65);
-            yaw = THREE.MathUtils.lerp(-Math.PI + .25, -.25, turn);
-            pitch = -.09 * Math.sin(Math.PI * THREE.MathUtils.clamp(greetingAge / 3.6, 0, 1));
-          } else if (scrolling) pitch = THREE.MathUtils.clamp((flightPosition.y - companion.group.position.y) * .16, -.3, .3);
-          rotation.set(0, yaw, pitch, "YZX");
+          if (scrolling) pitch = THREE.MathUtils.clamp((flightPosition.y - companion.group.position.y) * .16, -.3, .3);
+          // Nose into decisive vertical motion only; small drift stays level.
+          if (flight > .6 && Math.abs(lastVy) > .3) pitch += THREE.MathUtils.clamp(lastVy * .08, -.28, .28) * flight;
+          const yawRate = companionInitialized ? (yaw - previousYaw) / Math.max(delta, .0001) : 0;
+          bank = THREE.MathUtils.damp(bank, THREE.MathUtils.clamp(yawRate * .085, -.2, .2) * flight, 4, delta);
+          previousYaw = yaw;
+          rotation.set(0, yaw, pitch + bank, "YZX");
           targetRotation.setFromEuler(rotation);
-          if (interacting && state.full) {
-            excursionFacing.copy(targetRotation);
-            targetRotation.copy(excursionStartRotation).slerp(excursionFacing,
-              ease(greetingAge / .65) * (1 - ease((greetingAge - 2.9) / .7)));
-          }
           if (!companionInitialized || !state.full) companion.group.quaternion.copy(targetRotation);
           else companion.group.quaternion.slerp(targetRotation, 1 - Math.exp(-delta * 9));
           projected.copy(companion.group.position).project(camera);
           const birdX = hostBounds.left + (projected.x + 1) * width / 2;
           const birdY = hostBounds.top + (1 - projected.y) * height / 2;
-          const pointerWeight = pointerPresent && !interacting ? 1 - reach : 0;
-          gazeX = THREE.MathUtils.damp(gazeX, pointerWeight * THREE.MathUtils.clamp((pointer.x - birdX) / 240, -1, 1), 6, delta);
-          gazeY = THREE.MathUtils.damp(gazeY, pointerWeight * THREE.MathUtils.clamp((birdY - pointer.y) / 180, -1, 1), 6, delta);
-          companion.animate(state.full ? time : 0, state.full ? flight : 0, phase, state.full ? working : 0, { gazeX, gazeY, greeting, handlingLeaf: docked?.record.kind === "EDUCATION" });
+          // Outbound summons and hovered artifacts own the gaze; the pointer
+          // only leads when no stronger focus exists.
+          const focus = summon && !summon.arrived ? summon.target : hovered;
+          const gazeWeight = focus ? 1 : pointerPresent && !summoning ? 1 - reach : 0;
+          let gazeTargetX = (pointer.x - birdX) / 240, gazeTargetY = (birdY - pointer.y) / 180;
+          if (focus) {
+            projected.copy(focus.group.position).project(camera);
+            const focusX = hostBounds.left + (projected.x + 1) * width / 2;
+            const focusY = hostBounds.top + (1 - projected.y) * height / 2;
+            gazeTargetX = (focusX - birdX) / 240;
+            gazeTargetY = (birdY - focusY) / 180;
+          }
+          gazeX = THREE.MathUtils.damp(gazeX, gazeWeight * THREE.MathUtils.clamp(gazeTargetX, -1, 1), 6, delta);
+          gazeY = THREE.MathUtils.damp(gazeY, gazeWeight * THREE.MathUtils.clamp(gazeTargetY, -1, 1), 6, delta);
+          companion.animate(state.full ? time : 0, state.full ? flight : 0, phase, state.full ? working : 0, { gazeX, gazeY, flourish, handlingLeaf: docked?.record.kind === "EDUCATION" });
           companion.group.updateMatrixWorld(true);
           if (beak) { beak.getWorldPosition(beakOffset); beakOffset.sub(companion.group.position); }
           else beakOffset.set(.4, .25, 0);
@@ -285,50 +297,37 @@ export function createTimelineRenderer(host: HTMLElement, canvas: HTMLCanvasElem
             if (goal.x < right && (goal.y > bottom || companion.group.position.y > bottom)) goal.x = right;
             if (companionInitialized && companion.group.position.x < right - .02 && goal.y > bottom) goal.y = bottom;
           }
-          if (greetingPending) {
-            // Plan once, with a rounded corner below the heading. The entire
-            // route has one owner; per-frame obstacle feedback cannot flip it.
-            const start = companion.group.position.clone();
-            const bottom = camera.position.y + camera.bottom + safe;
-            const headingBottom = headerBounds && width > 750
-              ? camera.position.y + (height / 2 - (headerBounds.bottom - hostBounds.top)) / scale - safe
-              : start.y;
-            const end = start.clone();
-            end.x = Math.max(camera.left + safe, start.x - Math.min(2.6, (modelCenter - camera.left) * .46));
-            end.y = Math.max(bottom, Math.min(start.y - .75, headingBottom - .65));
-            end.z = Math.max(start.z, 3.8);
-            // If the short viewport has no space below the heading, stay in the
-            // model corridor instead of crossing the DOM text.
-            if (end.y > headingBottom && headerBounds && width > 750) end.x = start.x;
-            excursion = routeTo(start, end);
-            const landing = docking > .94 && docked
-              ? docked.group.localToWorld(docked.perch.clone()) : start.clone();
-            returnRoute = routeTo(landing, end);
-            greetingPending = false;
-          }
-          if (excursion) {
-            const travel = greetingAge < 1.5 ? ease(greetingAge / 1.5)
-              : greetingAge < 2.1 ? 1 : 1 - ease((greetingAge - 2.1) / 1.5);
-            (greetingAge > 2.1 && returnRoute ? returnRoute : excursion).getPointAt(travel, goal);
-          }
           if (!companionInitialized || !state.full) {
             companion.group.position.copy(goal); companionInitialized = true;
           } else {
-            // Continuous convergence survives reversals and cancelled greetings.
+            // Continuous convergence survives reversals and cancelled summons.
             companion.group.position.lerp(goal, 1 - Math.exp(-delta * (scrolling ? 12 : 9 + activity.grip * working * 7)));
 
           }
-          if (docked && docking > .99 && reach > .999 && !interacting) companion.settleContact(worldContact, activity.grip * working);
+          if (docked && docking > .99 && reach > .999 && !summoning) companion.settleContact(worldContact, activity.grip * working);
           if (beak && docked && activity.grip > .99 && working > .99) {
             beak.getWorldPosition(beakOffset);
             canvas.dataset.companionContactError = beakOffset.distanceTo(worldContact).toFixed(4);
           } else delete canvas.dataset.companionContactError;
+          // Translating with folded wings reads as a sliding model, but raw
+          // per-frame speed is noisy: it is damped first, the airborne state
+          // latches with hysteresis, and a docked beak only opens its wings
+          // for a genuine hop — never for tracking jitter.
+          const rawSpeed = companionInitialized ? companion.group.position.distanceTo(previousPosition) / Math.max(delta, .0001) : 0;
+          smoothedSpeed = THREE.MathUtils.damp(smoothedSpeed, rawSpeed, 6, delta);
+          lastVy = companionInitialized ? (companion.group.position.y - previousPosition.y) / Math.max(delta, .0001) : 0;
+          previousPosition.copy(companion.group.position);
           const distance = companion.group.position.distanceTo(goal);
-          const airborne = docking < .95 || scrolling || interacting || distance > .18 || reach > .03;
-          flight = state.full ? THREE.MathUtils.damp(flight, airborne ? 1 : 0, 9, delta) : 0;
+          airborneLatch = airborneLatch ? distance > .06 : distance > .15;
+          const airborne = docking < .95 || scrolling || summoning || airborneLatch;
+          const velocityFlight = working > .5
+            ? THREE.MathUtils.clamp((smoothedSpeed - 1.2) * 1.5, 0, .8)
+            : THREE.MathUtils.clamp((smoothedSpeed - .55) * 1.2, 0, 1);
+          flight = state.full ? THREE.MathUtils.damp(flight, Math.max(airborne ? 1 : 0, velocityFlight), 9, delta) : 0;
           // Work eligibility must not depend on distance to a goal that work
           // itself moves; that feedback repeatedly retracted the beak on return.
-          working = state.full ? THREE.MathUtils.damp(working, docking > .94 && !scrolling && !interacting ? 1 : 0, 7, delta) : 0;
+          // A preen window pauses the cycle — a grooming break between pulls.
+          working = state.full ? THREE.MathUtils.damp(working, docking > .94 && !scrolling && !summoning && companion.preen() < .3 ? 1 : 0, 7, delta) : 0;
           // The single projected hit area belongs to the bird, never the artifacts.
           projected.copy(companion.group.position); projected.y += visitorScale * .22; projected.project(camera);
           const x = (projected.x + 1) * width / 2, y = (1 - projected.y) * height / 2;
@@ -340,17 +339,32 @@ export function createTimelineRenderer(host: HTMLElement, canvas: HTMLCanvasElem
             hit.style.visibility = onScreen ? "visible" : "hidden";
             hit.tabIndex = onScreen ? 0 : -1;
           }
+          // Each artifact keeps its own projected native hit target, sized to
+          // the model strip so DOM text is never covered by a control.
+          for (const item of assemblies) {
+            const button = artifactHits.get(item.record.id);
+            if (!button) continue;
+            projected.copy(item.group.position); projected.y += .3; projected.project(camera);
+            const anchorX = (projected.x + 1) * width / 2, anchorY = (1 - projected.y) * height / 2;
+            const artifactSize = Math.max(44, Math.min(scale * 1.15, 150));
+            button.style.width = button.style.height = `${artifactSize}px`;
+            button.style.transform = `translate(${anchorX - artifactSize / 2}px, ${anchorY - artifactSize / 2}px)`;
+            const artifactOnScreen = anchorY > 0 && anchorY < height && hostBounds.top + anchorY > 0 && hostBounds.top + anchorY < window.innerHeight;
+            button.style.visibility = artifactOnScreen ? "visible" : "hidden";
+            button.tabIndex = artifactOnScreen ? 0 : -1;
+          }
           canvas.dataset.companionRecord = docked?.record.id ?? "between";
-          canvas.dataset.companionState = !state.full ? "static" : interacting ? "greeting" : docking < .01 ? "hovering" : airborne ? "flying" : "working";
+          canvas.dataset.companionState = !state.full ? "static" : summoning ? "summoning" : summon ? "demonstrating" : docking < .01 ? "hovering" : airborne ? "flying" : "working";
           canvas.dataset.companionCycle = phase.toFixed(2);
           canvas.dataset.companionGesture = activity.grip > .99 ? "holding" : activity.release > .1 ? "releasing" : activity.reach > .1 ? "approaching" : "observing";
           canvas.dataset.companionFlight = flight.toFixed(2);
           canvas.dataset.companionDock = docking.toFixed(3);
           canvas.dataset.companionPosition = companion.group.position.toArray().map((value) => value.toFixed(3)).join(",");
           canvas.dataset.companionYaw = yaw.toFixed(3);
-          canvas.dataset.companionGreeting = greeting.toFixed(3);
-          canvas.dataset.companionInteraction = interacting ? greetingAge < 1.5 ? "outbound" : greetingAge < 2.1 ? "turning" : "returning" : "idle";
+          canvas.dataset.companionFlourish = flourish.toFixed(3);
+          canvas.dataset.companionInteraction = summon ? summon.arrived ? "demonstrating" : "outbound" : "idle";
           canvas.dataset.companionGaze = `${gazeX.toFixed(2)},${gazeY.toFixed(2)}`;
+          canvas.dataset.companionPreen = companion.preen().toFixed(2);
         }
         renderer.render(scene, camera);
         canvas.dataset.frames = String(Number(canvas.dataset.frames || 0) + 1);
@@ -373,7 +387,7 @@ export function createTimelineRenderer(host: HTMLElement, canvas: HTMLCanvasElem
     const pageVisibility = () => { if (document.hidden) pause(); else schedule(); };
     const contextLost = (event: Event) => { event.preventDefault(); lost = true; pause(); host.dataset.renderer = "fallback"; };
     const contextRestored = () => { lost = false; dirty = true; schedule(); };
-    const onScroll = () => { lastScrollAt = performance.now(); greetingAt = -Infinity; greetingPending = false; excursion = null; returnRoute = null; staticGreeting = false; schedule(); };
+    const onScroll = () => { lastScrollAt = performance.now(); summon = null; staticGreeting = false; schedule(); };
     const onPointer = (event: PointerEvent) => {
       if (event.pointerType === "touch") return;
       pointer.set(event.clientX, event.clientY); pointerPresent = true;
@@ -381,20 +395,43 @@ export function createTimelineRenderer(host: HTMLElement, canvas: HTMLCanvasElem
       if (state.full) schedule();
     };
     const onLeave = () => { pointerPresent = false; };
-    const onGreeting = () => {
+    const onCommand = (targetId?: string) => {
       if (state.full) {
-        if (!excursion && !greetingPending) {
-          greetingAt = time; greetingPending = true;
-          excursionStartRotation.copy(companion.group.quaternion);
+        const target = (targetId ? assemblies.find((item) => item.record.id === targetId) : undefined)
+          ?? assemblies.find((item) => item.record.id === state.activeId) ?? docked;
+        if (!target) return;
+        if (summon && summon.target === target) {
+          // A repeat command replays the demonstration from its first inspection.
+          if (summon.arrived) { activityTime = 0; flourishAt = time; }
+        } else {
+          summon = { target, elapsed: 0, arrived: false };
+          flourishAt = time;
         }
       }
       else staticGreeting = !staticGreeting;
       schedule();
     };
+    const onHitCommand = () => onCommand();
     section.addEventListener("pointermove", onPointer, { passive: true });
     section.addEventListener("pointerleave", onLeave);
-    hit?.addEventListener("click", onGreeting);
-    cleanups.push(() => section.removeEventListener("pointermove", onPointer), () => section.removeEventListener("pointerleave", onLeave), () => hit?.removeEventListener("click", onGreeting));
+    hit?.addEventListener("click", onHitCommand);
+    artifactHits.forEach((button, id) => {
+      const onArtifactCommand = () => onCommand(id);
+      const onArtifactHover = () => {
+        hovered = assemblies.find((item) => item.record.id === id);
+        if (state.full) schedule();
+      };
+      const onArtifactLeave = () => { hovered = undefined; };
+      button.addEventListener("click", onArtifactCommand);
+      button.addEventListener("pointerenter", onArtifactHover);
+      button.addEventListener("pointerleave", onArtifactLeave);
+      cleanups.push(
+        () => button.removeEventListener("click", onArtifactCommand),
+        () => button.removeEventListener("pointerenter", onArtifactHover),
+        () => button.removeEventListener("pointerleave", onArtifactLeave),
+      );
+    });
+    cleanups.push(() => section.removeEventListener("pointermove", onPointer), () => section.removeEventListener("pointerleave", onLeave), () => hit?.removeEventListener("click", onHitCommand));
     window.addEventListener("scroll", onScroll, { passive: true });
     cleanups.push(() => window.removeEventListener("scroll", onScroll));
     const onResize = () => { dirty = true; schedule(); };
@@ -407,7 +444,7 @@ export function createTimelineRenderer(host: HTMLElement, canvas: HTMLCanvasElem
     canvas.addEventListener("webglcontextrestored", contextRestored);
     cleanups.push(() => canvas.removeEventListener("webglcontextrestored", contextRestored));
     return {
-      update(next) { if (disposed) return; state = next; if (!state.full) { pause(); greetingAt = -Infinity; greetingPending = false; excursion = null; returnRoute = null; working = 0; } schedule(); },
+      update(next) { if (disposed) return; state = next; if (!state.full) { pause(); summon = null; working = 0; } schedule(); },
       dispose,
     };
   } catch (error) {

@@ -48,6 +48,16 @@ export function TimelineStage({ records, activeId }: Props) {
         <div className="timeline-stage__model-zone" aria-hidden="true" />
         <canvas aria-hidden="true" ref={surface} />
         <button className="timeline-stage__companion" type="button" data-companion-hit tabIndex={-1} aria-label={locale === "zh" ? "与小鸟互动" : "Interact with the bird"} />
+        {records.map((record) => (
+          <button
+            className="timeline-stage__artifact"
+            type="button"
+            key={record.id}
+            data-artifact-hit={record.id}
+            tabIndex={-1}
+            aria-label={locale === "zh" ? `召唤小鸟检查 ${record.period} 的记录` : `Send the bird to inspect ${record.period}`}
+          />
+        ))}
       </div>
     </div>
   );

@@ -30,9 +30,12 @@
 .timeline-stage { position: sticky; inset-block-start: 0; block-size: min(100svh, 90rem); inline-size: 100%; overflow: hidden; }
 .timeline-stage canvas { display: block; inline-size: 100%; block-size: 100%; }
 .timeline-stage__model-zone { position: absolute; inset-block: 0; inset-inline-start: 29%; inline-size: 33.37%; pointer-events: none; }
-.timeline-stage__companion { position: absolute; inset: 0 auto auto 0; inline-size: var(--companion-size, 4rem); block-size: var(--companion-size, 4rem); margin: 0; padding: 0; background: transparent; border: 0; border-radius: 50%; pointer-events: auto; cursor: pointer; }
+.timeline-stage__companion { position: absolute; inset: 0 auto auto 0; inline-size: var(--companion-size, 4rem); block-size: var(--companion-size, 4rem); margin: 0; padding: 0; background: transparent; border: 0; border-radius: 50%; pointer-events: auto; cursor: pointer; z-index: 2; }
 .timeline-stage__companion:focus-visible { outline: 1px dashed var(--timeline-copper); outline-offset: 4px; }
 .timeline-stage:not([data-renderer="ready"]) .timeline-stage__companion { display: none; }
+.timeline-stage__artifact { position: absolute; inset: 0 auto auto 0; inline-size: var(--artifact-size, 5rem); block-size: var(--artifact-size, 5rem); margin: 0; padding: 0; background: transparent; border: 0; border-radius: 50%; pointer-events: auto; cursor: pointer; }
+.timeline-stage__artifact:focus-visible { outline: 1px dashed var(--timeline-copper); outline-offset: 4px; }
+.timeline-stage:not([data-renderer="ready"]) .timeline-stage__artifact { display: none; }
 .timeline-rail__records { position: relative; margin: 0 0 0 49%; padding: 0; list-style: none; }
 .timeline-rail__record { position: relative; min-block-size: clamp(20rem, 29svh, 27rem); padding-block: 1.5rem 4rem; scroll-margin-block-start: 25svh; }
 .timeline-rail__date { display: flex; align-items: baseline; flex-wrap: wrap; gap: 1.25rem; margin-block-end: 1.2rem; }
