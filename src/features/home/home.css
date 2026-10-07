@@ -435,101 +435,6 @@
   clip-path: ellipse(72% 110% at 109% 5%);
 }
 
-.entry-gate {
-  position: fixed;
-  z-index: calc(var(--layer-overlay) + 1);
-  inset: 0;
-  display: none;
-  min-block-size: 100dvh;
-  place-items: center;
-  overflow: hidden;
-  background: var(--color-void);
-  color: var(--color-bone);
-}
-
-html[data-entry-ritual="show"] .entry-gate {
-  display: grid;
-}
-
-html[data-entry-ritual="show"] .archive-experience {
-  visibility: hidden;
-}
-
-.entry-gate__trace {
-  position: absolute;
-  inset-inline: 0;
-  inset-block-start: 50%;
-  block-size: 1px;
-  background: var(--color-line);
-}
-
-.entry-gate__trace::after {
-  display: block;
-  inline-size: 42%;
-  block-size: 100%;
-  background: var(--color-signal);
-  content: "";
-  transform-origin: left;
-  animation: entry-gate-trace 520ms var(--ease-out) both;
-}
-
-.entry-gate__content {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  padding-inline: var(--space-page-inline);
-  text-align: center;
-  animation: entry-gate-content-in 460ms var(--ease-out) both;
-}
-
-.entry-gate__status {
-  margin-block-end: var(--space-md);
-  color: var(--color-silver);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.18em;
-}
-
-.entry-gate__title {
-  margin-block-end: clamp(1.5rem, 4vh, 2.5rem);
-  font-family: var(--font-display);
-  font-size: clamp(4.5rem, 12vw, 6rem);
-  letter-spacing: -0.02em;
-  line-height: 0.85;
-}
-
-.entry-gate__enter,
-.entry-gate__skip {
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  font-family: var(--font-mono);
-  letter-spacing: 0.1em;
-}
-
-.entry-gate__enter {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-md);
-  border-block-end: 1px solid var(--color-signal);
-  font-size: 0.78rem;
-}
-
-.entry-gate__enter span {
-  color: var(--color-signal);
-  font-family: var(--font-body);
-  font-size: 1.4rem;
-}
-
-.entry-gate__skip {
-  position: absolute;
-  inset-inline-end: max(var(--space-md), env(safe-area-inset-right));
-  inset-block-end: max(var(--space-md), env(safe-area-inset-bottom));
-  color: var(--color-silver);
-  font-size: 0.68rem;
-}
-
 html[data-effect-mode="static"] .home-hero__action::after,
 html[data-effect-mode="static"] .current-index__locator,
 html[data-effect-mode="static"] .projects-section__arrow {
@@ -545,28 +450,6 @@ html[data-effect-mode="static"] .projects-section__arrow {
   to {
     clip-path: inset(0 0 0 0);
     opacity: 1;
-  }
-}
-
-@keyframes entry-gate-content-in {
-  from {
-    opacity: 0;
-    transform: translateY(0.75rem);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes entry-gate-trace {
-  from {
-    transform: scaleX(0);
-  }
-
-  to {
-    transform: scaleX(1);
   }
 }
 

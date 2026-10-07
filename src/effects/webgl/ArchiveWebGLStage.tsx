@@ -16,6 +16,7 @@ type ArchiveWebGLStageProps = Readonly<{
   enabled: boolean;
   mode: EffectMode;
   rootRef: RefObject<HTMLElement | null>;
+  running: boolean;
   snapshotRef: ArchiveMotionSnapshotRef;
 }>;
 
@@ -29,9 +30,12 @@ export function ArchiveWebGLStage({
   enabled,
   mode,
   rootRef,
+  running,
   snapshotRef,
 }: ArchiveWebGLStageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const runningRef = useRef(running);
+  const playbackRef = useRef<{ pause: () => void; resume: () => void } | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -75,7 +79,9 @@ export function ArchiveWebGLStage({
 
       previousFrameAt = now;
       snapshot.elapsedMs =
-        mode === "full" ? elapsedOffset + now - startedAt : STATIC_ELAPSED_MS;
+        mode === "full" && runningRef.current
+          ? elapsedOffset + now - startedAt
+          : STATIC_ELAPSED_MS;
       snapshot.interactionEnergy *= Math.pow(0.88, deltaMs / 16.667);
       snapshot.entryEnergy *= Math.pow(0.94, deltaMs / 16.667);
       snapshot.pointer.velocityX *= Math.pow(0.78, deltaMs / 16.667);
@@ -87,7 +93,7 @@ export function ArchiveWebGLStage({
       animationFrame = 0;
       renderAt(now);
 
-      if (!destroyed && enabled && mode === "full" && !document.hidden) {
+      if (!destroyed && enabled && runningRef.current && mode === "full" && !document.hidden) {
         animationFrame = window.requestAnimationFrame(animate);
       }
     };
@@ -153,7 +159,7 @@ export function ArchiveWebGLStage({
       setRendererState("ready");
       renderAt(startedAt);
 
-      if (mode === "full" && !document.hidden) {
+      if (runningRef.current && mode === "full" && !document.hidden) {
         animationFrame = window.requestAnimationFrame(animate);
       }
     };
@@ -178,7 +184,7 @@ export function ArchiveWebGLStage({
       startedAt = window.performance.now();
       previousFrameAt = startedAt;
 
-      if (mode === "full" && renderer && !animationFrame) {
+      if (runningRef.current && mode === "full" && renderer && !animationFrame) {
         animationFrame = window.requestAnimationFrame(animate);
       } else {
         scheduleStaticFrame();
@@ -192,6 +198,20 @@ export function ArchiveWebGLStage({
     window.addEventListener("scroll", scheduleStaticFrame, { passive: true });
     document.addEventListener("visibilitychange", handleVisibilityChange);
     canvas.addEventListener("webglcontextrestored", handleContextRestored);
+    playbackRef.current = {
+      pause: () => {
+        elapsedOffset = snapshotRef.current.elapsedMs;
+        stopAnimation();
+      },
+      resume: () => {
+        elapsedOffset = snapshotRef.current.elapsedMs;
+        startedAt = window.performance.now();
+        previousFrameAt = startedAt;
+        if (renderer && mode === "full" && !document.hidden && !animationFrame) {
+          animationFrame = window.requestAnimationFrame(animate);
+        }
+      },
+    };
     createRenderer();
 
     if ("fonts" in document) {
@@ -204,6 +224,7 @@ export function ArchiveWebGLStage({
 
     return () => {
       destroyed = true;
+      playbackRef.current = null;
       stopAnimation();
 
       if (resizeFrame) {
@@ -221,6 +242,15 @@ export function ArchiveWebGLStage({
       delete root.dataset.webglStage;
     };
   }, [enabled, mode, rootRef, snapshotRef]);
+
+  useEffect(() => {
+    runningRef.current = running;
+    if (running) {
+      playbackRef.current?.resume();
+    } else {
+      playbackRef.current?.pause();
+    }
+  }, [running]);
 
   return (
     <div aria-hidden="true" className="archive-webgl-stage">

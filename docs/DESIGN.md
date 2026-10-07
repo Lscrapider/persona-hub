@@ -1,7 +1,7 @@
 ---
 title: Scra Atlas Design System
 status: current
-updated: 2026-09-06
+updated: 2026-10-07
 ---
 
 ## Overview
@@ -46,7 +46,7 @@ Module display headings stay compact and readable. The Hero lockup may scale muc
 - TypewriterText: an accessible Hero signature loop with a stable screen-reader equivalent.
 - ArchiveWebGLStage: the single fixed, aria-hidden WebGL2 canvas for the complete archive. Its Hero pass renders the curved technical word field with a glyph atlas and instanced geometry. Its later passes receive measured coordinates only from real DOM/SVG structures: the selected Log plus the existing curved reader boundary. Timeline owns its local renderer and does not publish anchors into this stage. No random circle, square, carrier, fake node, or arbitrary centre line may be introduced.
 - KineticTypeField: the Hero's semantic scene anchor and WebGL-unavailable silhouette. It does not create a second canvas or animation loop.
-- EntryGate: a skippable first-session cover. Archive content is hidden and inert while the cover is active after hydration; no-JavaScript rendering skips the cover.
+- EntryGate: a skippable system boot on every site entry and page refresh. Three real archive manifests register on the left, typography and the prepared opening scene report readiness on the right, and a central four-check sequence leads into the page. During the final handoff the covers split vertically and modules withdraw to the screen edges. The archive stays inert until completion; no-JavaScript rendering skips the cover. See `docs/design/2026-10-07-system-boot.md`.
 - LocaleControl and EffectModeControl: compact route-backed `ZH / EN` and persisted FULL / STATIC controls that share one lower-right control cluster without changing the Hero composition.
 
 Content belongs in `src/content/{zh,en}`, page features own semantic structure, shared entry effects live in src/effects/primitives, and continuous Hero lifecycle logic lives in src/effects/runtime.
@@ -61,6 +61,8 @@ Two systems provide the persistent motion in FULL:
 In FULL, stable bounds and the resolved font create one glyph atlas and immutable instance buffer for the WebGL2 renderer. A display-rate animation frame lets the shader evaluate ring angles, whole-word orientation, radial type scale, the curved surface, and semantic route pulses on the GPU; it does not issue a Canvas `fillText` call for every glyph every frame. A single passive, animation-frame-coalesced motion controller derives scroll velocity, continuous scene position, and viewport-relative anchor coordinates. Scene transitions use one smooth position across section boundaries, so the Hero's black field and glyphs fade and deform out instead of switching off. The WebGL backing store is capped at 1.25 device pixels per CSS pixel, and inactive semantic scene functions exit before their fixed-bound loops. STATIC draws one deterministic WebGL frame without a scene animation loop. The detached 2D canvas is limited to generating the glyph texture sent to the GPU; it is not a scene renderer or fallback.
 
 STATIC shows final text and a deterministic scene frame immediately whenever WebGL2 is available. System reduced motion starts in STATIC, while a persisted manual FULL preference remains valid. The unified stage pauses when the document is hidden. If WebGL2 cannot initialize or loses its context, the Hero keeps a non-interactive clipped dark silhouette, later sections keep their complete DOM content and applicable SVG structures, and no Canvas 2D scene renderer starts.
+
+The entry cover independently respects system reduced motion and STATIC. It prepares the existing first-screen renderer in one paused frame behind the cover; continuous scene playback and interactions start only when entry completes. Typography, record counts and scene readiness are tied to the loaded content and actual resource states. The four checks describe startup milestones, not transferred bytes. A bounded bootstrap/watchdog and a resource deadline preserve access when hydration, fonts or WebGL are unavailable. Normal visits to `/` and `/en` and every document refresh play the cover automatically; no query parameter or session flag controls replay.
 
 Timeline retains complete semantic DOM records alongside viewport-bounded Three.js geometry. Logs retains its DOM/SVG-first structure. Projects uses genuine volume geometry for its system scene, with projected native buttons, a text relationship list, and a native modal document reader for keyboard and screen-reader access. The WebGL stage measures opt-in `data-webgl-anchor` points and paints only an aria-hidden signal layer over those structures. The former generic particle layer, generic pointer ring, and feature-local Logs canvas are removed.
 

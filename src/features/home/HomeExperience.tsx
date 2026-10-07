@@ -109,6 +109,7 @@ function LocalizedHomeExperience() {
         enabled={revealEnabled}
         key={locale}
         locked={isArchiveLocked}
+        preparing={isArchiveLocked}
       >
         <main className="home-experience">
           <HomeHero

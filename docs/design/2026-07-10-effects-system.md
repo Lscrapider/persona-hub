@@ -86,7 +86,7 @@ System reduced motion starts in STATIC. A user can choose and persist FULL. The 
 
 ## Entry and failure rules
 
-EntryGate may provide a short first-session ritual with an immediate skip action. While it is visible, the archive shell is hidden and becomes inert after hydration. With JavaScript disabled, the gate is skipped by default and content is readable.
+EntryGate provides a short system boot on every site entry and page refresh, with an immediate skip action. While it is visible, the archive shell is hidden and becomes inert after hydration. With JavaScript disabled, the gate is skipped by default and content is readable. See `2026-10-07-system-boot.md` for the current startup sequence.
 
 The unified WebGL scene is aria-hidden and the Hero has a non-empty CSS silhouette fallback. Failure, backgrounding, mode changes, or an unavailable browser feature cannot hide content, trap focus, leave an empty Hero region, or make any archive section unavailable.
 

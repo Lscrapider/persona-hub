@@ -33,6 +33,7 @@ type ArchiveRuntimeProps = Readonly<{
   children: ReactNode;
   enabled: boolean;
   locked: boolean;
+  preparing: boolean;
 }>;
 
 type LastTrace = Readonly<{
@@ -55,6 +56,7 @@ export function ArchiveRuntime({
   children,
   enabled,
   locked,
+  preparing,
 }: ArchiveRuntimeProps) {
   const { mode, systemReduced } = useEffectMode();
   const runtimeActive = enabled && !locked;
@@ -253,9 +255,10 @@ export function ArchiveRuntime({
       ref={rootRef}
     >
       <ArchiveWebGLStage
-        enabled={runtimeActive}
+        enabled={runtimeActive || preparing}
         mode={effectiveMode}
         rootRef={rootRef}
+        running={runtimeActive}
         snapshotRef={snapshotRef}
       />
       {children}

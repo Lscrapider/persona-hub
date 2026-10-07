@@ -1,5 +1,9 @@
 import { EFFECT_MODE_STORAGE_KEY } from "@/core/effect-mode";
-import { ENTRY_SESSION_KEY } from "@/core/entry";
+import {
+  ENTRY_BOOTSTRAP_TIMEOUT_MS,
+  ENTRY_HYDRATED_EVENT,
+  ENTRY_WATCHDOG_TIMEOUT_MS,
+} from "@/core/entry";
 import { HomeExperience } from "@/features/home/HomeExperience";
 import { loadLocalizedArchiveContent } from "@/lib/content/archive";
 import type { ArchiveLocale } from "@/lib/content/types";
@@ -10,17 +14,8 @@ function createEntryBootstrapScript(locale: ArchiveLocale, htmlLang: string) {
     "  const root = document.documentElement;",
     `  root.lang = ${JSON.stringify(htmlLang)};`,
     `  root.dataset.locale = ${JSON.stringify(locale)};`,
-    "  let entryComplete = false;",
     "  let storedMode = null;",
     "  let systemReduced = false;",
-    "",
-    "  try {",
-    "    entryComplete = window.sessionStorage.getItem(" +
-      JSON.stringify(ENTRY_SESSION_KEY) +
-      ") === 'true';",
-    "  } catch {",
-    "    // Storage failure falls back to the readable first-visit ritual.",
-    "  }",
     "",
     "  try {",
     "    storedMode = window.localStorage.getItem(" +
@@ -41,29 +36,17 @@ function createEntryBootstrapScript(locale: ArchiveLocale, htmlLang: string) {
     "    : systemReduced ? 'static' : 'full';",
     "  root.dataset.effectMode = mode;",
     "",
-    "  const shouldShow = !entryComplete && mode === 'full';",
+    "  const shouldShow = mode === 'full' && !systemReduced;",
     "  root.dataset.entryRitual = shouldShow ? 'show' : 'skip';",
     "",
-    "  if (!shouldShow) {",
-    "    try {",
-    "      window.sessionStorage.setItem(" + JSON.stringify(ENTRY_SESSION_KEY) + ", 'true');",
-    "    } catch {",
-    "      // A skipped gate must never become a permanent blocker.",
-    "    }",
-    "    return;",
-    "  }",
+    "  if (!shouldShow) return;",
     "",
     "  let fallbackTimer;",
     "  const unlockEntry = () => {",
     "    root.dataset.entryRitual = 'skip';",
     "    document.removeEventListener('click', handleEntryAction);",
+    "    document.removeEventListener(" + JSON.stringify(ENTRY_HYDRATED_EVENT) + ", claimEntry);",
     "    window.clearTimeout(fallbackTimer);",
-    "",
-    "    try {",
-    "      window.sessionStorage.setItem(" + JSON.stringify(ENTRY_SESSION_KEY) + ", 'true');",
-    "    } catch {",
-    "      // The archive remains readable when session storage is unavailable.",
-    "    }",
     "  };",
     "  const handleEntryAction = (event) => {",
     "    const target = event.target;",
@@ -72,9 +55,14 @@ function createEntryBootstrapScript(locale: ArchiveLocale, htmlLang: string) {
     "      unlockEntry();",
     "    }",
     "  };",
+    "  const claimEntry = () => {",
+    "    window.clearTimeout(fallbackTimer);",
+    "    fallbackTimer = window.setTimeout(unlockEntry, " + ENTRY_WATCHDOG_TIMEOUT_MS + ");",
+    "  };",
     "",
     "  document.addEventListener('click', handleEntryAction);",
-    "  fallbackTimer = window.setTimeout(unlockEntry, 1800);",
+    "  document.addEventListener(" + JSON.stringify(ENTRY_HYDRATED_EVENT) + ", claimEntry, { once: true });",
+    "  fallbackTimer = window.setTimeout(unlockEntry, " + ENTRY_BOOTSTRAP_TIMEOUT_MS + ");",
     "})();",
   ].join("\n");
 }
